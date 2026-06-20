@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>墨 — Тренажёр каны</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ ТОКЕНЫ ============ */
+  :root{
+    --paper:#F7F3EA;
+    --paper-soft:#F1ECE0;
+    --ink:#1C1B1A;
+    --ink-soft:#5B5650;
+    --seal:#A23B2E;
+    --seal-soft:#C76450;
+    --moss:#5B7065;
+    --gold:#B8893F;
+    --line:#DCD4C2;
+    --line-strong:#C7BCA3;
+    --shadow: 0 8px 30px rgba(28,27,26,0.08);
+    --r-card: 4px;
+    --serif: "Noto Serif JP","Noto Serif CJK JP","Hiragino Mincho ProN","Yu Mincho","MS Mincho",serif;
+    --sans: "Noto Sans JP","Noto Sans CJK JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono: "JetBrains Mono","SF Mono","Consolas",monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(ellipse 800px 500px at 15% -10%, rgba(168,140,90,0.06), transparent),
+      radial-gradient(ellipse 700px 600px at 105% 110%, rgba(91,112,101,0.05), transparent);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  /* тонкая бумажная текстура через шум на svg */
+  .paper-noise{
+    position:fixed; inset:0; pointer-events:none; opacity:0.035; z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .frame{
+    position:relative; z-index:1;
+    max-width:880px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+
+  /* ============ ШАПКА ============ */
+  header.top{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom:22px;
+    gap:16px;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:10px;
+  }
+  .brand .mark{
+    font-family:var(--serif);
+    font-size:30px;
+    color:var(--seal);
+    line-height:1;
+  }
+  .brand h1{
+    font-family:var(--serif);
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    margin:0;
+  }
+  .brand .sub{
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    margin-top:2px;
+  }
+
+  /* печать-ханко вместо круглого прогресс-бара */
+  .hanko{
+    width:54px; height:54px;
+    border:2px solid var(--seal);
+    border-radius:3px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--seal);
+    flex:0 0 auto;
+    position:relative;
+    background:rgba(162,59,46,0.03);
+  }
+  .hanko .n{
+    font-family:var(--serif);
+    font-size:20px; font-weight:700; line-height:1;
+  }
+  .hanko .l{
+    font-size:8px; letter-spacing:0.08em; text-transform:uppercase; margin-top:2px; opacity:0.85;
+  }
+
+  /* ============ ВКЛАДКИ / НАСТРОЙКИ ============ */
+  .panel{
+    background:rgba(255,255,255,0.4);
+    border:1px solid var(--line);
+    border-radius:var(--r-card);
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+
+  .row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .row + .row{ margin-top:12px; }
+
+  .row-label{
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    flex:0 0 96px;
+  }
+
+  .chip-group{ display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+
+  .chip{
+    appearance:none; border:1px solid var(--line-strong);
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:13px;
+    padding:6px 13px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .chip:hover{ border-color:var(--seal); }
+  .chip[aria-pressed="true"]{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:var(--paper);
+  }
+  .chip .jp{ font-family:var(--serif); margin-right:4px; }
+  .chip small{ opacity:0.65; font-size:11px; }
+
+  .switch-label{
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; cursor:pointer; user-select:none;
+  }
+  .switch{
+    width:34px; height:19px; border-radius:10px;
+    background:var(--line-strong);
+    position:relative; flex:0 0 auto;
+    transition:background .2s;
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px;
+    width:15px; height:15px; border-radius:50%;
+    background:white; box-shadow:0 1px 2px rgba(0,0,0,0.25);
+    transition:left .2s;
+  }
+  .switch.on{ background:var(--moss); }
+  .switch.on::after{ left:17px; }
+
+  /* ============ СТАТИСТИКА ============ */
+  .stats-row{
+    display:flex; gap:10px; margin-bottom:18px;
+  }
+  .stat{
+    flex:1;
+    background:rgba(255,255,255,0.4);
+    border:1px solid var(--line);
+    border-radius:var(--r-card);
+    padding:12px 14px;
+    text-align:left;
+  }
+  .stat .v{ font-family:var(--serif); font-size:22px; font-weight:700; line-height:1; }
+  .stat .l{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); margin-top:4px; }
+  .stat.due .v{ color:var(--seal); }
+  .stat.mastered .v{ color:var(--gold); }
+  .stat.learning .v{ color:var(--moss); }
+
+  /* ============ КАРТОЧКА ВОПРОСА ============ */
+  .card-wrap{
+    position:relative;
+    border:1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.25));
+    border-radius:6px;
+    box-shadow:var(--shadow);
+    padding:0;
+    overflow:hidden;
+    min-height:380px;
+    display:flex; flex-direction:column;
+  }
+
+  /* рамка shoji - вертикальные тонкие линии по бокам */
+  .card-wrap::before, .card-wrap::after{
+    content:""; position:absolute; top:0; bottom:0; width:1px; background:var(--line);
+  }
+  .card-wrap::before{ left:28px; }
+  .card-wrap::after{ right:28px; }
+
+  .card-top{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 22px 0;
+    font-size:11px; color:var(--ink-soft); letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .card-top .deck-tag{
+    color:var(--seal);
+    font-weight:600;
+  }
+
+  .stage-track{
+    display:flex; gap:3px; margin-top:6px;
+  }
+  .stage-dot{
+    width:5px; height:5px; border-radius:50%; background:var(--line-strong);
+  }
+  .stage-dot.filled{ background:var(--moss); }
+  .stage-dot.gold{ background:var(--gold); }
+
+  .glyph-zone{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    padding:10px 0 4px;
+  }
+  .glyph{
+    font-family:var(--serif);
+    font-size:128px;
+    line-height:1;
+    color:var(--ink);
+    user-select:none;
+    transform:translateY(0) scale(1);
+    opacity:1;
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .glyph.entering{
+    opacity:0; transform:translateY(6px) scale(0.96);
+  }
+  .glyph.flash-correct{ color:var(--moss); }
+  .glyph.flash-wrong{ color:var(--seal); }
+
+  .feedback-strip{
+    min-height:40px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+    padding:0 22px;
+    text-align:center;
+  }
+  .feedback-strip .ok{ color:var(--moss); font-weight:600; }
+  .feedback-strip .bad{ color:var(--seal); font-weight:600; }
+  .feedback-strip .hint{ color:var(--ink-soft); }
+
+  /* ============ ВВОД: РОМАДЗИ ============ */
+  .answer-zone{
+    padding:8px 28px 28px;
+  }
+  .romaji-form{
+    display:flex; gap:10px;
+  }
+  .romaji-input{
+    flex:1;
+    font-family:var(--mono);
+    font-size:20px;
+    letter-spacing:0.03em;
+    padding:13px 16px;
+    border:1.5px solid var(--line-strong);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .romaji-input:focus{
+    border-color:var(--ink);
+    box-shadow:0 0 0 3px rgba(28,27,26,0.06);
+  }
+  .romaji-input.wrong{
+    border-color:var(--seal);
+    animation:shake .32s ease;
+  }
+  .romaji-input.right{
+    border-color:var(--moss);
+  }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    25%{ transform:translateX(-5px); }
+    75%{ transform:translateX(5px); }
+  }
+  .btn{
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    padding:13px 22px;
+    border-radius:4px;
+    border:1.5px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+    transition:background .15s, transform .1s, opacity .15s;
+    white-space:nowrap;
+  }
+  .btn:hover{ background:#000; }
+  .btn:active{ transform:scale(0.97); }
+  .btn:disabled{ opacity:0.4; cursor:default; }
+  .btn.secondary{
+    background:transparent; color:var(--ink); border-color:var(--line-strong);
+  }
+  .btn.secondary:hover{ border-color:var(--ink); background:transparent; }
+  .btn.ghost{
+    background:transparent; color:var(--ink-soft); border-color:transparent;
+    font-weight:500; padding:13px 14px;
+  }
+  .btn.ghost:hover{ color:var(--ink); background:rgba(0,0,0,0.03); }
+
+  /* ============ ВВОД: ВЫБОР 4 ВАРИАНТОВ ============ */
+  .choices-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  @media (max-width:480px){
+    .choices-grid{ grid-template-columns:1fr; }
+  }
+  .choice-btn{
+    font-family:var(--mono);
+    font-size:18px;
+    padding:16px 18px;
+    border:1.5px solid var(--line-strong);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+    transition:border-color .15s, background .15s, transform .08s;
+  }
+  .choice-btn:hover:not(:disabled){ border-color:var(--ink); background:var(--paper-soft); }
+  .choice-btn:active:not(:disabled){ transform:scale(0.985); }
+  .choice-btn:disabled{ cursor:default; }
+  .choice-btn.correct{
+    border-color:var(--moss); background:rgba(91,112,101,0.1); color:var(--moss); font-weight:700;
+  }
+  .choice-btn.incorrect{
+    border-color:var(--seal); background:rgba(162,59,46,0.08); color:var(--seal);
+  }
+  .choice-btn.dim{ opacity:0.45; }
+
+  /* ============ АДАПТИВ ДЛЯ УЗКИХ ЭКРАНОВ ============ */
+  @media (max-width:640px){
+    .frame{ padding:18px 14px 50px; }
+
+    header.top{ flex-wrap:wrap; }
+    .brand h1{ font-size:17px; }
+    .brand .mark{ font-size:26px; }
+    .brand .sub{ font-size:10px; letter-spacing:0.08em; }
+    .hanko{ width:46px; height:46px; }
+    .hanko .n{ font-size:17px; }
+
+    .panel{ padding:14px; }
+    .row{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .row-label{ flex:none; }
+    .chip-group{ width:100%; }
+    .chip{ font-size:12.5px; padding:6px 11px; }
+
+    .stats-row{ flex-wrap:wrap; }
+    .stat{ flex:1 1 calc(50% - 5px); min-width:calc(50% - 5px); }
+
+    .card-wrap::before{ left:14px; }
+    .card-wrap::after{ right:14px; }
+    .card-top{ padding:14px 16px 0; }
+    .glyph{ font-size:92px; }
+    .answer-zone{ padding:6px 16px 22px; }
+    .romaji-form{ flex-direction:column; }
+    .romaji-form .btn{ width:100%; }
+    .choices-grid{ grid-template-columns:1fr; }
+    .choice-btn{ font-size:16px; padding:14px 16px; }
+
+    .toolbar{ flex-direction:column; align-items:flex-start; gap:8px; }
+  }
+
+  @media (max-width:380px){
+    .glyph{ font-size:76px; }
+    .stat .v{ font-size:18px; }
+  }
+
+  /* ============ ПОДВАЛ КАРТОЧКИ: ТУШЬ-ПОЛОСА ============ */
+  .ink-track{
+    height:3px;
+    background:var(--line);
+    position:relative;
+    overflow:hidden;
+  }
+  .ink-fill{
+    position:absolute; left:0; top:0; bottom:0;
+    background:linear-gradient(90deg, var(--ink), var(--ink-soft));
+    width:0%;
+    transition:width .35s ease;
+  }
+
+  /* ============ НИЖНЯЯ ПАНЕЛЬ ИНСТРУМЕНТОВ ============ */
+  .toolbar{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:14px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .toolbar a, .toolbar button.link{
+    color:var(--ink-soft);
+    text-decoration:underline;
+    text-decoration-color:var(--line-strong);
+    background:none; border:none; cursor:pointer; font-size:12px; font-family:var(--sans); padding:0;
+  }
+  .toolbar a:hover, .toolbar button.link:hover{ color:var(--seal); }
+
+  /* ============ ЭКРАН "СВОДКА" ============ */
+  .summary{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:1; padding:40px 30px; text-align:center;
+  }
+  .summary .mark-big{
+    font-family:var(--serif); font-size:54px; color:var(--seal); margin-bottom:6px;
+  }
+  .summary h2{ font-family:var(--serif); font-size:24px; margin:0 0 6px; }
+  .summary p{ color:var(--ink-soft); font-size:14px; max-width:380px; margin:0 0 22px; line-height:1.5; }
+  .summary .grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:26px; width:100%; max-width:420px;
+  }
+  .summary .grid .stat{ text-align:center; }
+
+  .trouble-list{
+    width:100%; max-width:460px; text-align:left; margin-bottom:24px;
+  }
+  .trouble-list h3{
+    font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 8px;
+  }
+  .trouble-item{
+    display:flex; align-items:center; gap:12px;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+  }
+  .trouble-item .g{ font-family:var(--serif); font-size:22px; width:30px; }
+  .trouble-item .r{ font-family:var(--mono); color:var(--ink-soft); flex:1; }
+  .trouble-item .acc{ font-size:12px; color:var(--seal); }
+
+  .summary-actions{ display:flex; gap:10px; }
+
+  /* ============ ВСПОМОГАТЕЛЬНОЕ ============ */
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+  footer.note{
+    text-align:center; margin-top:26px; font-size:11.5px; color:var(--ink-soft); line-height:1.6;
+  }
+  footer.note b{ color:var(--ink); }
+
+  /* фокус-видимость для доступности */
+  button:focus-visible, input:focus-visible, .chip:focus-visible{
+    outline:2px solid var(--seal); outline-offset:2px;
+  }
+
+  /* модалка справки */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(28,27,26,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .modal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    max-width:520px; width:100%; padding:26px 28px; box-shadow:var(--shadow);
+    max-height:80vh; overflow-y:auto;
+  }
+  .modal h2{ font-family:var(--serif); font-size:20px; margin:0 0 14px; }
+  .modal p{ font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 12px; }
+  .modal ul{ font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 12px; padding-left:20px; }
+  .modal .close-row{ text-align:right; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="paper-noise" aria-hidden="true"></div>
+
+<div class="frame">
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">墨</span>
+      <div>
+        <h1>Тренажёр каны</h1>
+        <div class="sub">хирагана · катакана · интервальное повторение</div>
+      </div>
+    </div>
+    <button class="hanko" id="streakBadge" type="button" title="Текущая серия правильных ответов" aria-label="Текущая серия правильных ответов">
+      <span class="n" id="streakNum">0</span>
+      <span class="l">серия</span>
+    </button>
+  </header>
+
+  <section class="panel" aria-label="Настройки тренировки">
+    <div class="row">
+      <span class="row-label">Набор</span>
+      <div class="chip-group" id="deckChips" role="group" aria-label="Выбор набора знаков">
+        <button class="chip" data-deck="hiragana" aria-pressed="true"><span class="jp">あ</span>Хирагана</button>
+        <button class="chip" data-deck="katakana" aria-pressed="false"><span class="jp">ア</span>Катакана</button>
+        <button class="chip" data-deck="both" aria-pressed="false"><span class="jp">あア</span>Обе</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="row-label">Режим</span>
+      <div class="chip-group" id="modeChips" role="group" aria-label="Режим ответа">
+        <button class="chip" data-mode="type" aria-pressed="true">Печатать ромадзи</button>
+        <button class="chip" data-mode="choice" aria-pressed="false">4 варианта</button>
+        <button class="chip" data-mode="mixed" aria-pressed="false">Вперемешку</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="row-label">Знаки</span>
+      <div class="chip-group" id="extraChips">
+        <label class="switch-label"><span class="switch" id="swDakuten" data-key="dakuten"></span>がざだば — дакутэн/хандакутэн</label>
+        <label class="switch-label"><span class="switch" id="swYoon" data-key="yoon"></span>きゃ — ёон (сочетания)</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-row" aria-label="Статистика прогресса">
+    <div class="stat due">
+      <div class="v" id="statDue">0</div>
+      <div class="l">К повторению</div>
+    </div>
+    <div class="stat learning">
+      <div class="v" id="statLearning">0</div>
+      <div class="l">Изучается</div>
+    </div>
+    <div class="stat mastered">
+      <div class="v" id="statMastered">0</div>
+      <div class="l">Освоено</div>
+    </div>
+    <div class="stat">
+      <div class="v" id="statAccuracy">—</div>
+      <div class="l">Точность сессии</div>
+    </div>
+  </section>
+
+  <main class="card-wrap" id="cardWrap">
+
+    <div class="card-top">
+      <span class="deck-tag" id="cardDeckTag">ХИРАГАНА</span>
+      <div>
+        <span id="cardQueueInfo">Вопрос 1</span>
+        <div class="stage-track" id="stageTrack" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="glyph-zone">
+      <div class="glyph" id="glyph">あ</div>
+    </div>
+
+    <div class="feedback-strip" id="feedbackStrip"></div>
+
+    <div class="answer-zone" id="answerZone">
+      <!-- сюда рендерится либо форма ромадзи, либо сетка из 4 вариантов -->
+    </div>
+
+    <div class="ink-track"><div class="ink-fill" id="inkFill"></div></div>
+  </main>
+
+  <div class="toolbar">
+    <button class="link" id="btnHelp" type="button">Как это работает?</button>
+    <div>
+      <button class="link" id="btnReset" type="button">Сбросить прогресс</button>
+    </div>
+  </div>
+
+  <footer class="note">
+    Прогресс сохраняется в этом браузере (<b>localStorage</b>) — закрытие вкладки его не сотрёт.<br>
+    Карточки, в которых вы чаще ошибаетесь, будут попадаться <b>заметно чаще</b>, пока вы не ответите верно несколько раз подряд.
+  </footer>
+
+</div>
+
+<div class="modal-overlay" id="helpModal" style="display:none">
+  <div class="modal">
+    <h2>Как работает повторение</h2>
+    <p>Каждый знак — отдельная карточка с собственным «этапом изучения» (0–6). Правильный ответ двигает карточку на следующий этап, неправильный — откатывает её на 1–2 этапа назад (но не глубже самого начала) и временно повышает шанс, что эта карточка попадётся снова уже в этой сессии.</p>
+    <p>Очерёдность показа карточек определяется приоритетом:</p>
+    <ul>
+      <li>карточки с этапом 0–1 (свежие или недавно проваленные) показываются заметно чаще;</li>
+      <li>карточка, на которой вы только что ошиблись, обязательно вернётся в течение следующих 3–6 вопросов;</li>
+      <li>карточка, на которой вы ответили верно 5–6 раз подряд, считается «освоенной» и почти не появляется, пока не пройдёт время.</li>
+    </ul>
+    <p>Это упрощённый вариант алгоритма интервального повторения (похож на Leitner/SM-2), адаптированный для коротких тренировочных сессий, а не для запоминания на месяцы — поэтому здесь нет «дней до повторения», только частота внутри текущей и будущих сессий.</p>
+    <p>Серия (печать в правом верхнем углу) — это число подряд правильных ответов. Она сбрасывается при любой ошибке, но не влияет на сохранённый прогресс по карточкам.</p>
+    <div class="close-row"><button class="btn secondary" id="closeHelp" type="button">Понятно</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ======================================================================
+   1. ДАННЫЕ: хирагана, катакана, дакутэн/хандакутэн, ёон
+   Каждая запись: { kana, romaji:[варианты], deck:'hiragana'|'katakana', group:'base'|'dakuten'|'yoon' }
+====================================================================== */
+
+const HIRAGANA_BASE = [
+  ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
+  ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
+  ["さ","sa"],["し","shi,si"],["す","su"],["せ","se"],["そ","so"],
+  ["た","ta"],["ち","chi,ti"],["つ","tsu,tu"],["て","te"],["と","to"],
+  ["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],
+  ["は","ha"],["ひ","hi"],["ふ","fu,hu"],["へ","he"],["ほ","ho"],
+  ["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],
+  ["や","ya"],["ゆ","yu"],["よ","yo"],
+  ["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],
+  ["わ","wa"],["を","wo,o"],["ん","n"]
+];
+const HIRAGANA_DAKUTEN = [
+  ["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],
+  ["ざ","za"],["じ","ji,zi"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],
+  ["だ","da"],["ぢ","ji,di"],["づ","zu,du"],["で","de"],["ど","do"],
+  ["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"],
+  ["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]
+];
+const HIRAGANA_YOON = [
+  ["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],
+  ["しゃ","sha,sya"],["しゅ","shu,syu"],["しょ","sho,syo"],
+  ["ちゃ","cha,tya"],["ちゅ","chu,tyu"],["ちょ","cho,tyo"],
+  ["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],
+  ["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],
+  ["みゃ","mya"],["みゅ","myu"],["みょ","myo"],
+  ["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"],
+  ["ぎゃ","gya"],["ぎゅ","gyu"],["ぎょ","gyo"],
+  ["じゃ","ja,zya"],["じゅ","ju,zyu"],["じょ","jo,zyo"],
+  ["びゃ","bya"],["びゅ","byu"],["びょ","byo"],
+  ["ぴゃ","pya"],["ぴゅ","pyu"],["ぴょ","pyo"]
+];
+
+const KATAKANA_BASE = [
+  ["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],
+  ["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],
+  ["サ","sa"],["シ","shi,si"],["ス","su"],["セ","se"],["ソ","so"],
+  ["タ","ta"],["チ","chi,ti"],["ツ","tsu,tu"],["テ","te"],["ト","to"],
+  ["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],
+  ["ハ","ha"],["ヒ","hi"],["フ","fu,hu"],["ヘ","he"],["ホ","ho"],
+  ["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],
+  ["ヤ","ya"],["ユ","yu"],["ヨ","yo"],
+  ["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],
+  ["ワ","wa"],["ヲ","wo,o"],["ン","n"]
+];
+const KATAKANA_DAKUTEN = [
+  ["ガ","ga"],["ギ","gi"],["グ","gu"],["ゲ","ge"],["ゴ","go"],
+  ["ザ","za"],["ジ","ji,zi"],["ズ","zu"],["ゼ","ze"],["ゾ","zo"],
+  ["ダ","da"],["ヂ","ji,di"],["ヅ","zu,du"],["デ","de"],["ド","do"],
+  ["バ","ba"],["ビ","bi"],["ブ","bu"],["ベ","be"],["ボ","bo"],
+  ["パ","pa"],["ピ","pi"],["プ","pu"],["ペ","pe"],["ポ","po"]
+];
+const KATAKANA_YOON = [
+  ["キャ","kya"],["キュ","kyu"],["キョ","kyo"],
+  ["シャ","sha,sya"],["シュ","shu,syu"],["ショ","sho,syo"],
+  ["チャ","cha,tya"],["チュ","chu,tyu"],["チョ","cho,tyo"],
+  ["ニャ","nya"],["ニュ","nyu"],["ニョ","nyo"],
+  ["ヒャ","hya"],["ヒュ","hyu"],["ヒョ","hyo"],
+  ["ミャ","mya"],["ミュ","myu"],["ミョ","myo"],
+  ["リャ","rya"],["リュ","ryu"],["リョ","ryo"],
+  ["ギャ","gya"],["ギュ","gyu"],["ギョ","gyo"],
+  ["ジャ","ja,zya"],["ジュ","ju,zyu"],["ジョ","jo,zyo"],
+  ["ビャ","bya"],["ビュ","byu"],["ビョ","byo"],
+  ["ピャ","pya"],["ピュ","pyu"],["ピョ","pyo"]
+];
+
+function buildDeck(rows, deck, group){
+  return rows.map(([kana, romajiStr]) => ({
+    id: deck + ":" + kana,
+    kana,
+    romaji: romajiStr.split(",").map(s => s.trim()),
+    deck,
+    group
+  }));
+}
+
+const ALL_CARDS_SOURCE = [
+  ...buildDeck(HIRAGANA_BASE, "hiragana", "base"),
+  ...buildDeck(HIRAGANA_DAKUTEN, "hiragana", "dakuten"),
+  ...buildDeck(HIRAGANA_YOON, "hiragana", "yoon"),
+  ...buildDeck(KATAKANA_BASE, "katakana", "base"),
+  ...buildDeck(KATAKANA_DAKUTEN, "katakana", "dakuten"),
+  ...buildDeck(KATAKANA_YOON, "katakana", "yoon"),
+];
+
+/* ======================================================================
+   2. ХРАНИЛИЩЕ ПРОГРЕССА (localStorage)
+   progress[id] = { stage, lapses, seenTotal, correctTotal, lastResult }
+====================================================================== */
+
+const STORAGE_KEY = "kanaTrainerProgressV1";
+const SETTINGS_KEY = "kanaTrainerSettingsV1";
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveProgress(p){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }catch(e){ /* ignore quota errors */ }
+}
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveSettings(s){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }catch(e){}
+}
+
+let progress = loadProgress();
+
+function getCardProgress(id){
+  if(!progress[id]){
+    progress[id] = { stage:0, lapses:0, seenTotal:0, correctTotal:0, lastResult:null, dueBoost:0 };
+  }
+  return progress[id];
+}
+
+const MAX_STAGE = 6;       // 0..6, 6 = "освоено"
+const MASTERED_STAGE = 6;
+const MAX_DUE_BOOST = 6;   // потолок временного буста, чтобы одна карточка не "съедала" всю очередь
+
+/* ======================================================================
+   3. СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+====================================================================== */
+
+const state = {
+  deckFilter: "hiragana",     // hiragana | katakana | both
+  answerMode: "type",         // type | choice | mixed
+  includeDakuten: false,
+  includeYoon: false,
+  pool: [],                   // активный список карточек (объекты из ALL_CARDS_SOURCE)
+  dueReturns: {},              // id -> sessionSeen-момент, когда карточка "созрела" для возврата после ошибки
+  recentHistory: [],           // последние RECENCY_WINDOW показанных id, для анти-повтора
+  current: null,              // текущая карточка (объект)
+  currentMode: "type",        // фактический режим этого конкретного вопроса (для mixed)
+  streak: 0,
+  sessionSeen: 0,
+  sessionCorrect: 0,
+  sessionMistakes: {},        // id -> { card, wrongCount, attempts }
+  awaitingNext: false,        // true, пока показан фидбек и ждём следующий вопрос
+  sessionSeenMap: {},         // id -> сколько раз карточка показана В ЭТОЙ сессии (не путать с p.seenTotal)
+};
+
+/* ======================================================================
+   4. ПОСТРОЕНИЕ ПУЛА КАРТОЧЕК ПО ФИЛЬТРАМ
+====================================================================== */
+
+function buildPool(){
+  let cards = ALL_CARDS_SOURCE.filter(c => {
+    if(state.deckFilter !== "both" && c.deck !== state.deckFilter) return false;
+    if(c.group === "dakuten" && !state.includeDakuten) return false;
+    if(c.group === "yoon" && !state.includeYoon) return false;
+    return true;
+  });
+  state.pool = cards;
+}
+
+/* ======================================================================
+   5. ПЛАНИРОВЩИК (взвешенный Leitner-подобный выбор + гарантия возврата)
+
+   Архитектура весов спроектирована так, чтобы избежать "застревания" на узком
+   подмножестве карточек, даже если пользователь систематически ошибается на
+   большой части пула:
+   1) "Сырой" вес считается из stage/lapses/dueBoost/новизны как обычно.
+   2) Сырой вес сжимается через sqrt — это резко уменьшает РАЗРЫВ между трудными
+      и обычными карточками (без sqrt разрыв мог достигать 3-4x, с sqrt — не более ~1.8x).
+   3) Жёсткое recency-окно: карточка, показанная в любой из последних 4 вопросов,
+      получает множитель близкий к нулю, независимо от веса — это физически не даёт
+      одной и той же небольшой группе карточек крутиться по кругу.
+====================================================================== */
+
+const RECENCY_WINDOW = 4;     // сколько последних показов помним для анти-повтора
+const RECENCY_PENALTY = 0.05; // множитель веса для карточки, показанной недавно
+
+// "сырой" вес до сжатия — отражает приоритет карточки без учёта анти-повтора
+function rawWeight(card){
+  const p = getCardProgress(card.id);
+  let weight = (MAX_STAGE - p.stage) + 1;                 // 1..7 — этап изучения
+  weight += Math.min(p.lapses, 5) * 0.8;                   // история ошибок, насыщается на 5 → максимум +4
+  weight += Math.min(p.dueBoost, MAX_DUE_BOOST);           // временный буст после недавней ошибки, с потолком
+  if(p.stage >= MASTERED_STAGE) weight *= 0.12;            // освоенные почти не показываем
+
+  const seenInSession = state.sessionSeenMap[card.id] || 0;
+  if(seenInSession === 0) weight += 3;                     // бонус новизны: ещё не встречалась в этой сессии
+
+  if(state.dueReturns[card.id] !== undefined) weight += 8; // карточка "созрела" для форсированного возврата
+
+  return Math.max(weight, 0.05);
+}
+
+// итоговый вес: сырой вес сжимается через sqrt (сокращает разрыв трудных/обычных карточек),
+// затем применяется анти-повтор для карточек из недавней истории показов.
+function cardWeight(card){
+  let weight = Math.sqrt(rawWeight(card));
+  const recentIndex = state.recentHistory.indexOf(card.id);
+  if(recentIndex !== -1){
+    weight *= RECENCY_PENALTY;
+  }
+  return Math.max(weight, 0.01);
+}
+
+function weightedPick(cards, excludeId){
+  const candidates = excludeId && cards.length > 1 ? cards.filter(c => c.id !== excludeId) : cards;
+  const list = candidates.length ? candidates : cards;
+  const total = list.reduce((s,c) => s + cardWeight(c), 0);
+  let r = Math.random() * total;
+  for(const c of list){
+    r -= cardWeight(c);
+    if(r <= 0) return c;
+  }
+  return list[list.length - 1];
+}
+
+function pickNextCard(){
+  tickPendingReturns();
+
+  // Приоритет первого знакомства: пока в пуле остаются карточки, которые ЕЩЁ НИ РАЗУ
+  // не показывались в этой сессии, выбор идёт преимущественно среди них. Это гарантирует,
+  // что весь набор будет пройден хотя бы один раз, даже если пользователь систематически
+  // ошибается на уже увиденных карточках — иначе много карточек одновременно становятся
+  // "просроченными" для форсированного возврата и могут забить очередь, не пуская новые
+  // карточки вообще (этот путь имеет приоритет НИЖЕ unseen именно по этой причине).
+  const unseen = state.pool.filter(c => !state.sessionSeenMap[c.id]);
+  if(unseen.length > 0){
+    // с небольшой вероятностью всё же позволяем "трудному" повтору вмешаться,
+    // чтобы не получилось полностью предсказуемого "сначала все новые, потом все старые"
+    const allowInterrupt = Math.random() < 0.15 && state.pool.length > unseen.length;
+    if(!allowInterrupt){
+      const prevId = state.current ? state.current.id : null;
+      return weightedPick(unseen, prevId);
+    }
+  }
+
+  // Hard-cap: если карточка "созрела" для возврата уже давно (>10 вопросов назад)
+  // и всё ещё не показывалась — форсируем её, чтобы дать твёрдую гарантию,
+  // а не только повышенный вес. Это редкий путь, основной — взвешенный выбор ниже.
+  // Исключение: если пул крошечный (≤ RECENCY_WINDOW+1), форсированный путь пропускаем,
+  // чтобы не конфликтовать с анти-повтором на очень маленьких наборах.
+  if(state.pool.length > RECENCY_WINDOW + 1){
+    const overdueId = Object.keys(state.dueReturns).find(id => {
+      return (state.sessionSeen - state.dueReturns[id]) >= 10;
+    });
+    if(overdueId){
+      const overdueCard = state.pool.find(c => c.id === overdueId);
+      if(overdueCard && !state.recentHistory.includes(overdueId)){
+        delete state.dueReturns[overdueId];
+        return overdueCard;
+      }
+      if(!overdueCard) delete state.dueReturns[overdueId];
+    }
+  }
+
+  // Основной путь: взвешенный случайный выбор по всему пулу.
+  const prevId = state.current ? state.current.id : null;
+  return weightedPick(state.pool, prevId);
+}
+
+// после ошибки помечаем, что карточка должна "созреть" для повышенного приоритета через 3-6 вопросов
+function scheduleReturn(cardId){
+  const delay = 3 + Math.floor(Math.random() * 4); // 3..6
+  state._pendingReturns = state._pendingReturns || [];
+  // если возврат для этой карточки уже запланирован — не плодим дубли, просто оставляем самый ранний
+  const existing = state._pendingReturns.find(pr => pr.id === cardId);
+  if(existing){
+    existing.after = Math.min(existing.after, state.sessionSeen + delay);
+  } else {
+    state._pendingReturns.push({ id: cardId, after: state.sessionSeen + delay });
+  }
+}
+
+// переносит "созревшие" таймеры из _pendingReturns в dueReturns (карта id -> момент созревания)
+function tickPendingReturns(){
+  if(!state._pendingReturns) return;
+  const ready = [];
+  state._pendingReturns = state._pendingReturns.filter(pr => {
+    if(state.sessionSeen >= pr.after){ ready.push(pr); return false; }
+    return true;
+  });
+  ready.forEach(pr => {
+    state.dueReturns[pr.id] = state.sessionSeen; // запоминаем, когда карточка созрела
+  });
+}
+
+// запоминает карточку в recency-окне (анти-повтор), вызывается при каждом показе
+function pushRecentHistory(cardId){
+  state.recentHistory.push(cardId);
+  while(state.recentHistory.length > RECENCY_WINDOW){
+    state.recentHistory.shift();
+  }
+}
+
+/* ======================================================================
+   6. ЛОГИКА ОТВЕТА: обновление stage/lapses
+====================================================================== */
+
+function applyAnswer(card, isCorrect){
+  const p = getCardProgress(card.id);
+  p.seenTotal++;
+  state.sessionSeen++;
+
+  if(isCorrect){
+    p.correctTotal++;
+    p.stage = Math.min(MAX_STAGE, p.stage + 1);
+    p.lastResult = "correct";
+    p.dueBoost = Math.floor(p.dueBoost / 2);   // быстрое затухание буста при верном ответе
+    state.streak++;
+    state.sessionCorrect++;
+  } else {
+    p.lapses++;
+    p.stage = Math.max(0, p.stage - 2);
+    p.lastResult = "wrong";
+    p.dueBoost = Math.min(MAX_DUE_BOOST, p.dueBoost + 4);
+    state.streak = 0;
+    scheduleReturn(card.id);
+
+    if(!state.sessionMistakes[card.id]){
+      state.sessionMistakes[card.id] = { card, wrongCount:0, attempts:0 };
+    }
+    state.sessionMistakes[card.id].wrongCount++;
+  }
+  if(state.sessionMistakes[card.id]) state.sessionMistakes[card.id].attempts++;
+
+  saveProgress(progress);
+  tickPendingReturns();
+}
+
+/* ======================================================================
+   7. РЕНДЕР: общие элементы (шапка, статистика, печать)
+====================================================================== */
+
+const el = {
+  deckChips: document.getElementById("deckChips"),
+  modeChips: document.getElementById("modeChips"),
+  swDakuten: document.getElementById("swDakuten"),
+  swYoon: document.getElementById("swYoon"),
+  statDue: document.getElementById("statDue"),
+  statLearning: document.getElementById("statLearning"),
+  statMastered: document.getElementById("statMastered"),
+  statAccuracy: document.getElementById("statAccuracy"),
+  streakNum: document.getElementById("streakNum"),
+  cardWrap: document.getElementById("cardWrap"),
+  cardDeckTag: document.getElementById("cardDeckTag"),
+  cardQueueInfo: document.getElementById("cardQueueInfo"),
+  stageTrack: document.getElementById("stageTrack"),
+  glyph: document.getElementById("glyph"),
+  feedbackStrip: document.getElementById("feedbackStrip"),
+  answerZone: document.getElementById("answerZone"),
+  inkFill: document.getElementById("inkFill"),
+  btnHelp: document.getElementById("btnHelp"),
+  btnReset: document.getElementById("btnReset"),
+  helpModal: document.getElementById("helpModal"),
+  closeHelp: document.getElementById("closeHelp"),
+};
+
+function updateStreakBadge(){
+  el.streakNum.textContent = state.streak;
+}
+
+function updateStatsPanel(){
+  let due = 0, learning = 0, mastered = 0;
+  state.pool.forEach(c => {
+    const p = getCardProgress(c.id);
+    if(p.stage >= MASTERED_STAGE) mastered++;
+    else if(p.stage <= 1) due++;
+    else learning++;
+  });
+  el.statDue.textContent = due;
+  el.statLearning.textContent = learning;
+  el.statMastered.textContent = mastered;
+
+  if(state.sessionSeen > 0){
+    const pct = Math.round((state.sessionCorrect / state.sessionSeen) * 100);
+    el.statAccuracy.textContent = pct + "%";
+  } else {
+    el.statAccuracy.textContent = "—";
+  }
+}
+
+function deckLabel(deck){
+  if(deck === "hiragana") return "ХИРАГАНА";
+  if(deck === "katakana") return "КАТАКАНА";
+  return deck.toUpperCase();
+}
+
+function renderStageTrack(stage){
+  el.stageTrack.innerHTML = "";
+  for(let i=0;i<MAX_STAGE;i++){
+    const dot = document.createElement("span");
+    dot.className = "stage-dot";
+    if(i < stage){
+      dot.className += (stage >= MASTERED_STAGE) ? " gold" : " filled";
+    }
+    el.stageTrack.appendChild(dot);
+  }
+}
+
+/* ======================================================================
+   8. РЕНДЕР ВОПРОСА
+====================================================================== */
+
+function resolveCurrentMode(){
+  if(state.answerMode === "mixed"){
+    return Math.random() < 0.5 ? "type" : "choice";
+  }
+  return state.answerMode;
+}
+
+function startQuestion(){
+  if(state.pool.length === 0){
+    el.glyph.textContent = "—";
+    el.feedbackStrip.innerHTML = "<span class='hint'>Включите хотя бы один набор знаков выше.</span>";
+    el.answerZone.innerHTML = "";
+    return;
+  }
+
+  const card = pickNextCard();
+  state.current = card;
+  state.currentMode = resolveCurrentMode();
+  state.awaitingNext = false;
+
+  delete state.dueReturns[card.id];   // карточка показана — снимаем бонус "созрела для возврата"
+  state.sessionSeenMap[card.id] = (state.sessionSeenMap[card.id] || 0) + 1;
+  pushRecentHistory(card.id);
+
+  const p = getCardProgress(card.id);
+
+  el.cardDeckTag.textContent = deckLabel(card.deck);
+  el.cardQueueInfo.textContent = "Показ #" + (state.sessionSeen + 1);
+  renderStageTrack(p.stage);
+
+  // анимация смены символа
+  el.glyph.classList.remove("flash-correct","flash-wrong");
+  el.glyph.classList.add("entering");
+  el.glyph.textContent = card.kana;
+  requestAnimationFrame(() => {
+    el.glyph.classList.remove("entering");
+  });
+
+  el.feedbackStrip.innerHTML = "&nbsp;";
+  el.inkFill.style.width = Math.min(100, (state.sessionSeen % 20) * 5) + "%";
+
+  if(state.currentMode === "choice"){
+    renderChoiceInput(card);
+  } else {
+    renderTypeInput(card);
+  }
+
+  updateStatsPanel();
+}
+
+function renderTypeInput(card){
+  el.answerZone.innerHTML = `
+    <form class="romaji-form" id="romajiForm" autocomplete="off">
+      <input
+        class="romaji-input"
+        id="romajiInput"
+        type="text"
+        inputmode="latin"
+        placeholder="ромадзи…"
+        aria-label="Введите чтение знака латиницей"
+        autocapitalize="off"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button class="btn" type="submit">Проверить</button>
+    </form>
+  `;
+  const input = document.getElementById("romajiInput");
+  const form = document.getElementById("romajiForm");
+  input.focus();
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if(state.awaitingNext){
+      startQuestion();
+      return;
+    }
+    const val = input.value.trim().toLowerCase();
+    if(!val) return;
+    const ok = card.romaji.some(r => r.toLowerCase() === val);
+    handleTypeResult(card, ok, input);
+  });
+}
+
+function handleTypeResult(card, ok, inputEl){
+  inputEl.disabled = true;
+  inputEl.classList.add(ok ? "right" : "wrong");
+  el.glyph.classList.add(ok ? "flash-correct" : "flash-wrong");
+
+  if(ok){
+    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])}</span>`;
+  } else {
+    el.feedbackStrip.innerHTML = `<span class="bad">правильный ответ: ${escapeHtml(card.romaji[0])}</span>`;
+  }
+
+  applyAnswer(card, ok);
+  updateStreakBadge();
+  updateStatsPanel();
+  state.awaitingNext = true;
+
+  // меняем кнопку формы на "Далее"
+  const form = document.getElementById("romajiForm");
+  const btn = form.querySelector("button[type=submit]");
+  btn.textContent = "Далее →";
+  inputEl.removeEventListener; // no-op, оставлено для ясности структуры
+
+  // Enter уже обработает submit и вызовет startQuestion() благодаря awaitingNext-ветке
+  setTimeout(() => { btn.focus(); }, 10);
+}
+
+function renderChoiceInput(card){
+  const distractors = pickDistractors(card, 3);
+  const options = shuffle([card, ...distractors]);
+
+  el.answerZone.innerHTML = `<div class="choices-grid" id="choicesGrid" role="group" aria-label="Варианты ответа"></div>`;
+  const grid = document.getElementById("choicesGrid");
+
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.type = "button";
+    btn.textContent = opt.romaji[0];
+    btn.addEventListener("click", () => handleChoiceResult(card, opt, btn, grid));
+    grid.appendChild(btn);
+  });
+}
+
+function pickDistractors(card, count){
+  // приоритет: знаки из той же "строки" (похожая форма/звук), иначе случайные из пула
+  const sameDeckOthers = state.pool.filter(c => c.id !== card.id && c.deck === card.deck);
+  const source = sameDeckOthers.length >= count ? sameDeckOthers : state.pool.filter(c => c.id !== card.id);
+  const shuffled = shuffle(source.slice());
+  const result = [];
+  const usedRomaji = new Set(card.romaji.map(r => r.toLowerCase()));
+  for(const c of shuffled){
+    if(result.length >= count) break;
+    if(usedRomaji.has(c.romaji[0].toLowerCase())) continue;
+    if(result.find(r => r.romaji[0] === c.romaji[0])) continue;
+    result.push(c);
+    usedRomaji.add(c.romaji[0].toLowerCase());
+  }
+  return result;
+}
+
+function handleChoiceResult(card, chosen, btnEl, grid){
+  if(state.awaitingNext) return;
+  state.awaitingNext = true;
+
+  const ok = chosen.id === card.id;
+  const allBtns = Array.from(grid.children);
+  allBtns.forEach(b => { b.disabled = true; });
+
+  allBtns.forEach(b => {
+    if(b.textContent === card.romaji[0]) b.classList.add("correct");
+  });
+  if(!ok) btnEl.classList.add("incorrect");
+  allBtns.forEach(b => {
+    if(!b.classList.contains("correct") && !b.classList.contains("incorrect")) b.classList.add("dim");
+  });
+
+  el.glyph.classList.add(ok ? "flash-correct" : "flash-wrong");
+  if(ok){
+    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])}</span>`;
+  } else {
+    el.feedbackStrip.innerHTML = `<span class="bad">верный ответ — ${escapeHtml(card.romaji[0])}</span>`;
+  }
+
+  applyAnswer(card, ok);
+  updateStreakBadge();
+  updateStatsPanel();
+
+  // добавляем кнопку "Далее"
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "btn";
+  nextBtn.style.gridColumn = "1 / -1";
+  nextBtn.style.marginTop = "2px";
+  nextBtn.textContent = "Далее →";
+  nextBtn.type = "button";
+  nextBtn.addEventListener("click", startQuestion);
+  grid.appendChild(nextBtn);
+  setTimeout(() => nextBtn.focus(), 10);
+}
+
+/* ======================================================================
+   9. ВСПОМОГАТЕЛЬНОЕ
+====================================================================== */
+
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[ch]));
+}
+
+/* ======================================================================
+   10. ОБРАБОТЧИКИ НАСТРОЕК
+====================================================================== */
+
+function setActiveChip(group, key, value){
+  Array.from(group.children).forEach(chip => {
+    const pressed = chip.dataset[key] === value;
+    chip.setAttribute("aria-pressed", pressed ? "true" : "false");
+  });
+}
+
+el.deckChips.addEventListener("click", (e) => {
+  const btn = e.target.closest(".chip");
+  if(!btn) return;
+  state.deckFilter = btn.dataset.deck;
+  setActiveChip(el.deckChips, "deck", state.deckFilter);
+  buildPool();
+  persistSettings();
+  startQuestion();
+});
+
+el.modeChips.addEventListener("click", (e) => {
+  const btn = e.target.closest(".chip");
+  if(!btn) return;
+  state.answerMode = btn.dataset.mode;
+  setActiveChip(el.modeChips, "mode", state.answerMode);
+  persistSettings();
+  startQuestion();
+});
+
+function toggleSwitch(switchEl, key){
+  switchEl.addEventListener("click", () => {
+    const isOn = switchEl.classList.toggle("on");
+    state[key === "dakuten" ? "includeDakuten" : "includeYoon"] = isOn;
+    buildPool();
+    persistSettings();
+    startQuestion();
+  });
+  switchEl.setAttribute("role","switch");
+  switchEl.setAttribute("tabindex","0");
+  switchEl.addEventListener("keydown", (e) => {
+    if(e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      switchEl.click();
+    }
+  });
+}
+toggleSwitch(el.swDakuten, "dakuten");
+toggleSwitch(el.swYoon, "yoon");
+
+function persistSettings(){
+  saveSettings({
+    deckFilter: state.deckFilter,
+    answerMode: state.answerMode,
+    includeDakuten: state.includeDakuten,
+    includeYoon: state.includeYoon,
+  });
+}
+
+function applySavedSettings(){
+  const saved = loadSettings();
+  if(!saved) return;
+  state.deckFilter = saved.deckFilter || state.deckFilter;
+  state.answerMode = saved.answerMode || state.answerMode;
+  state.includeDakuten = !!saved.includeDakuten;
+  state.includeYoon = !!saved.includeYoon;
+
+  setActiveChip(el.deckChips, "deck", state.deckFilter);
+  setActiveChip(el.modeChips, "mode", state.answerMode);
+  if(state.includeDakuten) el.swDakuten.classList.add("on");
+  if(state.includeYoon) el.swYoon.classList.add("on");
+}
+
+/* ======================================================================
+   11. СБРОС ПРОГРЕССА / СПРАВКА
+====================================================================== */
+
+el.btnReset.addEventListener("click", () => {
+  const ok = window.confirm("Сбросить весь сохранённый прогресс (этапы изучения по всем знакам)? Это нельзя отменить.");
+  if(!ok) return;
+  progress = {};
+  saveProgress(progress);
+  state.streak = 0;
+  state.sessionSeen = 0;
+  state.sessionCorrect = 0;
+  state.sessionMistakes = {};
+  state._pendingReturns = [];
+  state.dueReturns = {};
+  state.sessionSeenMap = {};
+  state.recentHistory = [];
+  updateStreakBadge();
+  startQuestion();
+});
+
+el.btnHelp.addEventListener("click", () => { el.helpModal.style.display = "flex"; });
+el.closeHelp.addEventListener("click", () => { el.helpModal.style.display = "none"; });
+el.helpModal.addEventListener("click", (e) => { if(e.target === el.helpModal) el.helpModal.style.display = "none"; });
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && el.helpModal.style.display === "flex") el.helpModal.style.display = "none";
+});
+
+/* ======================================================================
+   12. ГЛОБАЛЬНЫЕ ГОРЯЧИЕ КЛАВИШИ ДЛЯ РЕЖИМА ВЫБОРА (1-4)
+====================================================================== */
+
+document.addEventListener("keydown", (e) => {
+  if(state.currentMode !== "choice") return;
+  if(state.awaitingNext) return;
+  const idx = parseInt(e.key, 10);
+  if(idx >= 1 && idx <= 4){
+    const grid = document.getElementById("choicesGrid");
+    if(!grid) return;
+    const buttons = Array.from(grid.querySelectorAll(".choice-btn"));
+    const btn = buttons[idx - 1];
+    if(btn && !btn.disabled) btn.click();
+  }
+});
+
+/* ======================================================================
+   13. ИНИЦИАЛИЗАЦИЯ
+====================================================================== */
+
+applySavedSettings();
+buildPool();
+updateStreakBadge();
+startQuestion();
+
+})();
+</script>
+
+</body>
+</html>
