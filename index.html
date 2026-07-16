@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>墨 — Тренажёр каны</title>
-<link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -21,8 +20,8 @@
     --gold:#B8893F;
     --line:#DCD4C2;
     --line-strong:#C7BCA3;
-    --shadow: 0 8px 30px rgba(28,27,26,0.08);
-    --r-card: 4px;
+    --shadow: 0 22px 70px rgba(42,35,25,0.12);
+    --r-card: 16px;
     --serif: "Noto Serif JP","Noto Serif CJK JP","Hiragino Mincho ProN","Yu Mincho","MS Mincho",serif;
     --sans: "Noto Sans JP","Noto Sans CJK JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     --mono: "JetBrains Mono","SF Mono","Consolas",monospace;
@@ -31,10 +30,11 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--paper);
+    background:#efe8dc;
     background-image:
-      radial-gradient(ellipse 800px 500px at 15% -10%, rgba(168,140,90,0.06), transparent),
-      radial-gradient(ellipse 700px 600px at 105% 110%, rgba(91,112,101,0.05), transparent);
+      radial-gradient(ellipse 800px 500px at 15% -10%, rgba(190,91,65,0.13), transparent),
+      radial-gradient(ellipse 700px 600px at 105% 110%, rgba(72,126,101,0.12), transparent),
+      linear-gradient(135deg, #f8f2e8 0%, #eee5d7 100%);
     color:var(--ink);
     font-family:var(--sans);
     min-height:100vh;
@@ -54,15 +54,15 @@
 
   .frame{
     position:relative; z-index:1;
-    max-width:880px;
+    max-width:1040px;
     margin:0 auto;
-    padding:28px 20px 60px;
+    padding:34px 20px 64px;
   }
 
   /* ============ ШАПКА ============ */
   header.top{
     display:flex; align-items:flex-start; justify-content:space-between;
-    margin-bottom:22px;
+    margin-bottom:26px;
     gap:16px;
   }
   .brand{
@@ -70,13 +70,13 @@
   }
   .brand .mark{
     font-family:var(--serif);
-    font-size:30px;
+    font-size:36px;
     color:var(--seal);
     line-height:1;
   }
   .brand h1{
     font-family:var(--serif);
-    font-size:19px;
+    font-size:24px;
     font-weight:600;
     letter-spacing:0.02em;
     margin:0;
@@ -110,10 +110,10 @@
 
   /* ============ ВКЛАДКИ / НАСТРОЙКИ ============ */
   .panel{
-    background:rgba(255,255,255,0.4);
+    background:rgba(255,255,255,0.64);
     border:1px solid var(--line);
     border-radius:var(--r-card);
-    padding:16px 18px;
+    padding:18px 20px;
     margin-bottom:18px;
   }
 
@@ -177,7 +177,7 @@
   }
   .stat{
     flex:1;
-    background:rgba(255,255,255,0.4);
+    background:rgba(255,255,255,0.64);
     border:1px solid var(--line);
     border-radius:var(--r-card);
     padding:12px 14px;
@@ -186,8 +186,19 @@
   .stat .v{ font-family:var(--serif); font-size:22px; font-weight:700; line-height:1; }
   .stat .l{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); margin-top:4px; }
   .stat.due .v{ color:var(--seal); }
-  .stat.mastered .v{ color:var(--gold); }
-  .stat.learning .v{ color:var(--moss); }
+  .stat.mastered .v{ color:var(--moss); }
+  .stat.learning .v{ color:var(--gold); }
+  .stat[data-stat-filter]{
+    cursor:help;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease;
+  }
+  .stat[data-stat-filter]:hover,.stat[data-stat-filter]:focus-visible{
+    transform:translateY(-2px);
+    border-color:var(--line-strong);
+    background:rgba(255,255,255,.88);
+    box-shadow:0 10px 24px rgba(42,35,25,.08);
+    outline:none;
+  }
 
   /* ============ КАРТОЧКА ВОПРОСА ============ */
   .card-wrap{
@@ -195,20 +206,13 @@
     border:1px solid var(--line);
     background:
       linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.25));
-    border-radius:6px;
+    border-radius:24px;
     box-shadow:var(--shadow);
     padding:0;
     overflow:hidden;
-    min-height:380px;
+    min-height:430px;
     display:flex; flex-direction:column;
   }
-
-  /* рамка shoji - вертикальные тонкие линии по бокам */
-  .card-wrap::before, .card-wrap::after{
-    content:""; position:absolute; top:0; bottom:0; width:1px; background:var(--line);
-  }
-  .card-wrap::before{ left:28px; }
-  .card-wrap::after{ right:28px; }
 
   .card-top{
     display:flex; justify-content:space-between; align-items:center;
@@ -237,7 +241,7 @@
   }
   .glyph{
     font-family:var(--serif);
-    font-size:128px;
+    font-size:144px;
     line-height:1;
     color:var(--ink);
     user-select:none;
@@ -276,15 +280,15 @@
     letter-spacing:0.03em;
     padding:13px 16px;
     border:1.5px solid var(--line-strong);
-    border-radius:4px;
+    border-radius:12px;
     background:var(--paper);
     color:var(--ink);
     outline:none;
     transition:border-color .15s, box-shadow .15s;
   }
   .romaji-input:focus{
-    border-color:var(--ink);
-    box-shadow:0 0 0 3px rgba(28,27,26,0.06);
+    border-color:#9B9387;
+    box-shadow:0 0 0 3px rgba(91,112,101,0.10);
   }
   .romaji-input.wrong{
     border-color:var(--seal);
@@ -304,7 +308,7 @@
     font-weight:600;
     letter-spacing:0.02em;
     padding:13px 22px;
-    border-radius:4px;
+    border-radius:12px;
     border:1.5px solid var(--ink);
     background:var(--ink);
     color:var(--paper);
@@ -337,7 +341,7 @@
     font-size:18px;
     padding:16px 18px;
     border:1.5px solid var(--line-strong);
-    border-radius:4px;
+    border-radius:12px;
     background:var(--paper);
     color:var(--ink);
     cursor:pointer;
@@ -375,8 +379,6 @@
     .stats-row{ flex-wrap:wrap; }
     .stat{ flex:1 1 calc(50% - 5px); min-width:calc(50% - 5px); }
 
-    .card-wrap::before{ left:14px; }
-    .card-wrap::after{ right:14px; }
     .card-top{ padding:14px 16px 0; }
     .glyph{ font-size:92px; }
     .answer-zone{ padding:6px 16px 22px; }
@@ -395,10 +397,7 @@
 
   /* ============ ПОДВАЛ КАРТОЧКИ: ТУШЬ-ПОЛОСА ============ */
   .ink-track{
-    height:3px;
-    background:var(--line);
-    position:relative;
-    overflow:hidden;
+    display:none;
   }
   .ink-fill{
     position:absolute; left:0; top:0; bottom:0;
@@ -464,9 +463,10 @@
   footer.note b{ color:var(--ink); }
 
   /* фокус-видимость для доступности */
-  button:focus-visible, input:focus-visible, .chip:focus-visible{
+  button:focus-visible, .chip:focus-visible{
     outline:2px solid var(--seal); outline-offset:2px;
   }
+  .romaji-input:focus-visible{outline:none}
 
   /* модалка справки */
   .modal-overlay{
@@ -483,6 +483,80 @@
   .modal p{ font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 12px; }
   .modal ul{ font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 12px; padding-left:20px; }
   .modal .close-row{ text-align:right; margin-top:10px; }
+
+  /* ============ НОВЫЙ ВИЗУАЛ И КАРТА ПРОГРЕССА ============ */
+  .top-actions{display:flex;align-items:center;gap:10px}
+  .sound-toggle{
+    min-height:54px;padding:0 16px;border:1px solid var(--line-strong);border-radius:14px;
+    background:rgba(255,255,255,.58);color:var(--ink);font:600 12px var(--sans);
+    display:flex;align-items:center;gap:8px;cursor:pointer;transition:.18s ease;
+  }
+  .sound-toggle:hover{transform:translateY(-1px);border-color:var(--seal)}
+  .sound-toggle[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .sound-icon{font-size:18px;line-height:1}
+
+  .progress-panel{
+    margin:0 0 18px;padding:18px 20px 20px;border:1px solid var(--line);
+    border-radius:var(--r-card);background:rgba(255,255,255,.68);box-shadow:0 10px 34px rgba(42,35,25,.05);
+  }
+  .progress-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .progress-head h2{font:700 16px var(--serif);margin:0 0 3px}
+  .progress-head p{font-size:12px;color:var(--ink-soft);margin:0}
+  .progress-legend{display:flex;align-items:center;gap:8px;color:var(--ink-soft);font-size:10px;white-space:nowrap}
+  .legend-gradient{width:120px;height:8px;border-radius:99px;background:linear-gradient(90deg,#bf4c45 0%,#c8c4bc 50%,#4c9871 100%)}
+  .kana-heatmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(34px,1fr));gap:6px}
+  .heat-cell{
+    appearance:none;min-width:0;aspect-ratio:1;border:1px solid rgba(70,62,52,.12);border-radius:10px;
+    display:grid;place-items:center;background:#c8c4bc;color:#fff;font:600 18px var(--serif);
+    cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  }
+  .heat-cell:hover,.heat-cell:focus-visible{transform:translateY(-2px);box-shadow:0 8px 18px rgba(42,35,25,.14);border-color:rgba(28,27,26,.35)}
+  .heat-cell.is-current{outline:2px solid var(--ink);outline-offset:2px}
+  .kana-heatmap.has-filter .heat-cell{opacity:.18;filter:grayscale(.65);transform:scale(.94)}
+  .kana-heatmap.has-filter .heat-cell.is-highlighted{
+    opacity:1;filter:none;transform:translateY(-2px) scale(1.06);box-shadow:0 8px 18px rgba(42,35,25,.16);
+  }
+  .heat-empty{font-size:12px;color:var(--ink-soft);padding:4px 0}
+
+  .speak-btn{
+    position:absolute;right:38px;bottom:20px;width:46px;height:46px;border-radius:50%;
+    border:1px solid var(--line-strong);background:rgba(247,243,234,.82);color:var(--ink);
+    display:grid;place-items:center;font-size:20px;cursor:pointer;z-index:2;transition:.18s ease;
+  }
+  .speak-btn:hover{transform:scale(1.06);border-color:var(--seal);color:var(--seal)}
+  .speak-btn:disabled{opacity:.35;cursor:default;transform:none}
+  .card-wrap.is-resolving .answer-zone{pointer-events:none}
+  .card-wrap.is-roulette .glyph{
+    animation:roulettePulse .13s ease-in-out infinite alternate;
+    filter:blur(.25px);
+  }
+  .card-wrap.is-roulette .glyph-zone::before{
+    content:"";position:absolute;width:210px;height:210px;border-radius:50%;
+    background:radial-gradient(circle,rgba(184,137,63,.13),rgba(184,137,63,0) 68%);
+    animation:rouletteHalo .55s ease-in-out infinite alternate;
+  }
+  .transition-note{
+    grid-column:1 / -1;text-align:center;padding:9px 12px;color:var(--ink-soft);
+    font-size:12px;letter-spacing:.03em;
+  }
+  @keyframes roulettePulse{
+    from{transform:translateY(-4px) scale(.96);opacity:.62}
+    to{transform:translateY(4px) scale(1.04);opacity:1}
+  }
+  @keyframes rouletteHalo{from{transform:scale(.84);opacity:.35}to{transform:scale(1.08);opacity:1}}
+  .card-wrap::selection{background:rgba(162,59,46,.15)}
+  .stat{position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--line)}
+  .stat.due::after{background:var(--seal)}
+  .stat.learning::after{background:var(--gold)}
+  .stat.mastered::after{background:var(--moss)}
+
+  @media (max-width:640px){
+    .top-actions{gap:7px}.sound-toggle{width:48px;padding:0;justify-content:center}.sound-toggle .sound-label{display:none}
+    .progress-head{align-items:flex-start;flex-direction:column}.kana-heatmap{grid-template-columns:repeat(8,1fr)}
+    .heat-cell{font-size:16px;border-radius:8px}.speak-btn{right:22px;bottom:14px}
+  }
+  @media (max-width:380px){.kana-heatmap{grid-template-columns:repeat(7,1fr)}}
 </style>
 </head>
 <body>
@@ -499,10 +573,15 @@
         <div class="sub">хирагана · катакана · интервальное повторение</div>
       </div>
     </div>
-    <button class="hanko" id="streakBadge" type="button" title="Текущая серия правильных ответов" aria-label="Текущая серия правильных ответов">
-      <span class="n" id="streakNum">0</span>
-      <span class="l">серия</span>
-    </button>
+    <div class="top-actions">
+      <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true" title="Звуковой сигнал и произношение после ответа">
+        <span class="sound-icon" aria-hidden="true">♪</span><span class="sound-label">Звук и речь</span>
+      </button>
+      <button class="hanko" id="streakBadge" type="button" title="Текущая серия правильных ответов" aria-label="Текущая серия правильных ответов">
+        <span class="n" id="streakNum">0</span>
+        <span class="l">серия</span>
+      </button>
+    </div>
   </header>
 
   <section class="panel" aria-label="Настройки тренировки">
@@ -532,15 +611,15 @@
   </section>
 
   <section class="stats-row" aria-label="Статистика прогресса">
-    <div class="stat due">
+    <div class="stat due" data-stat-filter="due" tabindex="0" title="Показать знаки к повторению">
       <div class="v" id="statDue">0</div>
       <div class="l">К повторению</div>
     </div>
-    <div class="stat learning">
+    <div class="stat learning" data-stat-filter="learning" tabindex="0" title="Показать изучаемые знаки">
       <div class="v" id="statLearning">0</div>
       <div class="l">Изучается</div>
     </div>
-    <div class="stat mastered">
+    <div class="stat mastered" data-stat-filter="mastered" tabindex="0" title="Показать освоенные знаки">
       <div class="v" id="statMastered">0</div>
       <div class="l">Освоено</div>
     </div>
@@ -548,6 +627,19 @@
       <div class="v" id="statAccuracy">—</div>
       <div class="l">Точность сессии</div>
     </div>
+  </section>
+
+  <section class="progress-panel" aria-labelledby="progressTitle">
+    <div class="progress-head">
+      <div>
+        <h2 id="progressTitle">Карта знаний</h2>
+        <p>Нажмите на знак для произношения или наведите на статистику, чтобы отфильтровать карту</p>
+      </div>
+      <div class="progress-legend" aria-label="Шкала прогресса: от ошибок к уверенным ответам">
+        <span>ошибки</span><span class="legend-gradient" aria-hidden="true"></span><span>уверенно</span>
+      </div>
+    </div>
+    <div class="kana-heatmap" id="kanaHeatmap"></div>
   </section>
 
   <main class="card-wrap" id="cardWrap">
@@ -562,9 +654,10 @@
 
     <div class="glyph-zone">
       <div class="glyph" id="glyph">あ</div>
+      <button class="speak-btn" id="speakBtn" type="button" title="Произнести знак" aria-label="Произнести текущий знак">♪</button>
     </div>
 
-    <div class="feedback-strip" id="feedbackStrip"></div>
+    <div class="feedback-strip" id="feedbackStrip" role="status" aria-live="polite"></div>
 
     <div class="answer-zone" id="answerZone">
       <!-- сюда рендерится либо форма ромадзи, либо сетка из 4 вариантов -->
@@ -590,15 +683,18 @@
 <div class="modal-overlay" id="helpModal" style="display:none">
   <div class="modal">
     <h2>Как работает повторение</h2>
-    <p>Каждый знак — отдельная карточка с собственным «этапом изучения» (0–6). Правильный ответ двигает карточку на следующий этап, неправильный — откатывает её на 1–2 этапа назад (но не глубже самого начала) и временно повышает шанс, что эта карточка попадётся снова уже в этой сессии.</p>
-    <p>Очерёдность показа карточек определяется приоритетом:</p>
+    <p>Для каждого знака рассчитывается вероятность воспоминания по кривой Эббингауза: <b>R = e<sup>−t/S</sup></b>, где <b>t</b> — время после повторения, а <b>S</b> — индивидуальная устойчивость памяти для этого знака.</p>
+    <p>Очерёдность и интервалы определяются так:</p>
     <ul>
-      <li>карточки с этапом 0–1 (свежие или недавно проваленные) показываются заметно чаще;</li>
-      <li>карточка, на которой вы только что ошиблись, обязательно вернётся в течение следующих 3–6 вопросов;</li>
-      <li>карточка, на которой вы ответили верно 5–6 раз подряд, считается «освоенной» и почти не появляется, пока не пройдёт время.</li>
+      <li>новые и просроченные карточки получают наибольший приоритет;</li>
+      <li>верный ответ увеличивает устойчивость памяти и отодвигает следующий повтор — сначала на минуты, затем на часы, дни и месяцы;</li>
+      <li>ошибка уменьшает устойчивость и возвращает карточку через несколько вопросов, а также назначает близкий повтор по времени;</li>
+      <li>карточка считается освоенной, когда рассчитанный интервал достигает нескольких недель.</li>
     </ul>
-    <p>Это упрощённый вариант алгоритма интервального повторения (похож на Leitner/SM-2), адаптированный для коротких тренировочных сессий, а не для запоминания на месяцы — поэтому здесь нет «дней до повторения», только частота внутри текущей и будущих сессий.</p>
+    <p>Целевая вероятность удержания — 85%. Если расчётная вероятность падает ниже неё, знак попадает в «К повторению». Время последнего ответа и следующего повтора сохраняется в браузере между сессиями.</p>
     <p>Серия (печать в правом верхнем углу) — это число подряд правильных ответов. Она сбрасывается при любой ошибке, но не влияет на сохранённый прогресс по карточкам.</p>
+    <p>После ответа звучит короткий сигнал: восходящий — при верном ответе, понижающийся — при ошибке. Затем произносится знак, и небольшая «рулетка» автоматически переключает карточку.</p>
+    <p>Карта знаний начинается серой. Ошибки уводят знак к красному, а верные ответы — к зелёному. Нажмите на любой знак карты или на кнопку ♪ в карточке, чтобы услышать японское произношение. Наведение на блоки статистики временно подсвечивает соответствующие знаки.</p>
     <div class="close-row"><button class="btn secondary" id="closeHelp" type="button">Понятно</button></div>
   </div>
 </div>
@@ -699,7 +795,7 @@ const ALL_CARDS_SOURCE = [
 
 /* ======================================================================
    2. ХРАНИЛИЩЕ ПРОГРЕССА (localStorage)
-   progress[id] = { stage, lapses, seenTotal, correctTotal, lastResult }
+   progress[id] дополнительно хранит устойчивость памяти и даты повторения
 ====================================================================== */
 
 const STORAGE_KEY = "kanaTrainerProgressV1";
@@ -726,11 +822,102 @@ function saveSettings(s){
 
 let progress = loadProgress();
 
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const TARGET_RETENTION = 0.85;
+const DECAY_TO_TARGET = -Math.log(TARGET_RETENTION);
+const FIRST_INTERVAL_MS = 20 * MINUTE_MS;
+const LAPSE_INTERVAL_MS = 5 * MINUTE_MS;
+const MAX_INTERVAL_MS = 180 * DAY_MS;
+const MASTERED_INTERVAL_MS = 21 * DAY_MS;
+const LEGACY_STAGE_INTERVALS = [
+  5 * MINUTE_MS,
+  20 * MINUTE_MS,
+  1 * DAY_MS,
+  3 * DAY_MS,
+  7 * DAY_MS,
+  16 * DAY_MS,
+  35 * DAY_MS,
+];
+
+function intervalToStability(intervalMs){
+  return Math.max(MINUTE_MS, intervalMs / DECAY_TO_TARGET);
+}
+
+function getScheduledIntervalMs(p){
+  if(!p.stabilityMs) return 0;
+  return Math.max(0, p.stabilityMs * DECAY_TO_TARGET);
+}
+
+function getRetrievability(p, now = Date.now()){
+  if(!p.seenTotal || !p.lastReviewedAt || !p.stabilityMs) return 0;
+  const elapsed = Math.max(0, now - p.lastReviewedAt);
+  return Math.max(0, Math.min(1, Math.exp(-elapsed / p.stabilityMs)));
+}
+
+function isMemoryDue(p, now = Date.now()){
+  if(!p.seenTotal) return true;
+  if(p.nextReviewAt && p.nextReviewAt <= now) return true;
+  return getRetrievability(p, now) <= TARGET_RETENTION;
+}
+
+function memoryStageFromInterval(intervalMs){
+  if(intervalMs >= MASTERED_INTERVAL_MS) return 6;
+  if(intervalMs >= 7 * DAY_MS) return 5;
+  if(intervalMs >= 3 * DAY_MS) return 4;
+  if(intervalMs >= 1 * DAY_MS) return 3;
+  if(intervalMs >= 3 * HOUR_MS) return 2;
+  if(intervalMs > 0) return 1;
+  return 0;
+}
+
+function normalizeMemoryProgress(p){
+  p.stage = Number.isFinite(p.stage) ? Math.max(0, Math.min(6, p.stage)) : 0;
+  p.lapses = Number.isFinite(p.lapses) ? p.lapses : 0;
+  p.seenTotal = Number.isFinite(p.seenTotal) ? p.seenTotal : 0;
+  p.correctTotal = Number.isFinite(p.correctTotal) ? p.correctTotal : 0;
+  p.dueBoost = Number.isFinite(p.dueBoost) ? p.dueBoost : 0;
+
+  if(p.seenTotal > 0 && (!Number.isFinite(p.stabilityMs) || p.stabilityMs <= 0)){
+    const migratedInterval = LEGACY_STAGE_INTERVALS[p.stage] || FIRST_INTERVAL_MS;
+    p.stabilityMs = intervalToStability(migratedInterval);
+    p.lastReviewedAt = Number.isFinite(p.lastReviewedAt) ? p.lastReviewedAt : Date.now();
+    p.nextReviewAt = p.lastResult === "wrong"
+      ? Date.now()
+      : p.lastReviewedAt + migratedInterval;
+  }
+
+  if(p.seenTotal > 0 && !Number.isFinite(p.lastReviewedAt)){
+    p.lastReviewedAt = Date.now();
+  }
+  if(p.seenTotal > 0 && !Number.isFinite(p.nextReviewAt)){
+    p.nextReviewAt = p.lastReviewedAt + getScheduledIntervalMs(p);
+  }
+  p.stage = memoryStageFromInterval(getScheduledIntervalMs(p));
+  return p;
+}
+
 function getCardProgress(id){
   if(!progress[id]){
-    progress[id] = { stage:0, lapses:0, seenTotal:0, correctTotal:0, lastResult:null, dueBoost:0 };
+    progress[id] = {
+      stage:0,
+      lapses:0,
+      seenTotal:0,
+      correctTotal:0,
+      lastResult:null,
+      dueBoost:0,
+      stabilityMs:0,
+      lastReviewedAt:null,
+      nextReviewAt:null,
+    };
   }
-  return progress[id];
+  return normalizeMemoryProgress(progress[id]);
+}
+
+function migrateProgressToForgettingCurve(){
+  Object.keys(progress).forEach(id => normalizeMemoryProgress(progress[id]));
+  saveProgress(progress);
 }
 
 const MAX_STAGE = 6;       // 0..6, 6 = "освоено"
@@ -746,6 +933,7 @@ const state = {
   answerMode: "type",         // type | choice | mixed
   includeDakuten: false,
   includeYoon: false,
+  soundEnabled: true,
   pool: [],                   // активный список карточек (объекты из ALL_CARDS_SOURCE)
   dueReturns: {},              // id -> sessionSeen-момент, когда карточка "созрела" для возврата после ошибки
   recentHistory: [],           // последние RECENCY_WINDOW показанных id, для анти-повтора
@@ -758,6 +946,10 @@ const state = {
   awaitingNext: false,        // true, пока показан фидбек и ждём следующий вопрос
   sessionSeenMap: {},         // id -> сколько раз карточка показана В ЭТОЙ сессии (не путать с p.seenTotal)
 };
+
+let feedbackSequenceId = 0;
+let audioContext = null;
+let activeStatFilter = null;
 
 /* ======================================================================
    4. ПОСТРОЕНИЕ ПУЛА КАРТОЧЕК ПО ФИЛЬТРАМ
@@ -774,34 +966,42 @@ function buildPool(){
 }
 
 /* ======================================================================
-   5. ПЛАНИРОВЩИК (взвешенный Leitner-подобный выбор + гарантия возврата)
+   5. ПЛАНИРОВЩИК ПО КРИВОЙ ЗАБЫВАНИЯ ЭББИНГАУЗА
 
-   Архитектура весов спроектирована так, чтобы избежать "застревания" на узком
-   подмножестве карточек, даже если пользователь систематически ошибается на
-   большой части пула:
-   1) "Сырой" вес считается из stage/lapses/dueBoost/новизны как обычно.
-   2) Сырой вес сжимается через sqrt — это резко уменьшает РАЗРЫВ между трудными
-      и обычными карточками (без sqrt разрыв мог достигать 3-4x, с sqrt — не более ~1.8x).
-   3) Жёсткое recency-окно: карточка, показанная в любой из последних 4 вопросов,
-      получает множитель близкий к нулю, независимо от веса — это физически не даёт
-      одной и той же небольшой группе карточек крутиться по кругу.
+   Для каждой карточки считается вероятность воспоминания R=e^(-t/S).
+   Новые и карточки ниже целевого удержания получают высокий приоритет.
+   Карточки, которые ещё хорошо помнятся, остаются доступны для свободной
+   тренировки, но выбираются значительно реже.
 ====================================================================== */
 
 const RECENCY_WINDOW = 4;     // сколько последних показов помним для анти-повтора
 const RECENCY_PENALTY = 0.05; // множитель веса для карточки, показанной недавно
 
-// "сырой" вес до сжатия — отражает приоритет карточки без учёта анти-повтора
 function rawWeight(card){
   const p = getCardProgress(card.id);
-  let weight = (MAX_STAGE - p.stage) + 1;                 // 1..7 — этап изучения
-  weight += Math.min(p.lapses, 5) * 0.8;                   // история ошибок, насыщается на 5 → максимум +4
-  weight += Math.min(p.dueBoost, MAX_DUE_BOOST);           // временный буст после недавней ошибки, с потолком
-  if(p.stage >= MASTERED_STAGE) weight *= 0.12;            // освоенные почти не показываем
+  const now = Date.now();
+  const retention = getRetrievability(p, now);
+  const interval = getScheduledIntervalMs(p);
+  let weight;
+
+  if(!p.seenTotal){
+    weight = 8;                                           // новый знак
+  } else if(isMemoryDue(p, now)){
+    const overdueMs = Math.max(0, now - (p.nextReviewAt || now));
+    const overdueFactor = Math.min(6, overdueMs / Math.max(interval, HOUR_MS));
+    weight = 9 + overdueFactor + (1 - retention) * 5;     // просроченный знак
+  } else {
+    weight = 0.25 + (1 - retention) * 3;                  // ещё хорошо помнится
+    if(interval >= MASTERED_INTERVAL_MS) weight *= 0.18;
+  }
+
+  weight += Math.min(p.lapses, 5) * 0.55;
+  weight += Math.min(p.dueBoost, MAX_DUE_BOOST);
 
   const seenInSession = state.sessionSeenMap[card.id] || 0;
-  if(seenInSession === 0) weight += 3;                     // бонус новизны: ещё не встречалась в этой сессии
+  if(seenInSession === 0 && (!p.seenTotal || isMemoryDue(p, now))) weight += 1.5;
 
-  if(state.dueReturns[card.id] !== undefined) weight += 8; // карточка "созрела" для форсированного возврата
+  if(state.dueReturns[card.id] !== undefined) weight += 10;
 
   return Math.max(weight, 0.05);
 }
@@ -831,46 +1031,16 @@ function weightedPick(cards, excludeId){
 
 function pickNextCard(){
   tickPendingReturns();
-
-  // Приоритет первого знакомства: пока в пуле остаются карточки, которые ЕЩЁ НИ РАЗУ
-  // не показывались в этой сессии, выбор идёт преимущественно среди них. Это гарантирует,
-  // что весь набор будет пройден хотя бы один раз, даже если пользователь систематически
-  // ошибается на уже увиденных карточках — иначе много карточек одновременно становятся
-  // "просроченными" для форсированного возврата и могут забить очередь, не пуская новые
-  // карточки вообще (этот путь имеет приоритет НИЖЕ unseen именно по этой причине).
-  const unseen = state.pool.filter(c => !state.sessionSeenMap[c.id]);
-  if(unseen.length > 0){
-    // с небольшой вероятностью всё же позволяем "трудному" повтору вмешаться,
-    // чтобы не получилось полностью предсказуемого "сначала все новые, потом все старые"
-    const allowInterrupt = Math.random() < 0.15 && state.pool.length > unseen.length;
-    if(!allowInterrupt){
-      const prevId = state.current ? state.current.id : null;
-      return weightedPick(unseen, prevId);
-    }
-  }
-
-  // Hard-cap: если карточка "созрела" для возврата уже давно (>10 вопросов назад)
-  // и всё ещё не показывалась — форсируем её, чтобы дать твёрдую гарантию,
-  // а не только повышенный вес. Это редкий путь, основной — взвешенный выбор ниже.
-  // Исключение: если пул крошечный (≤ RECENCY_WINDOW+1), форсированный путь пропускаем,
-  // чтобы не конфликтовать с анти-повтором на очень маленьких наборах.
-  if(state.pool.length > RECENCY_WINDOW + 1){
-    const overdueId = Object.keys(state.dueReturns).find(id => {
-      return (state.sessionSeen - state.dueReturns[id]) >= 10;
-    });
-    if(overdueId){
-      const overdueCard = state.pool.find(c => c.id === overdueId);
-      if(overdueCard && !state.recentHistory.includes(overdueId)){
-        delete state.dueReturns[overdueId];
-        return overdueCard;
-      }
-      if(!overdueCard) delete state.dueReturns[overdueId];
-    }
-  }
-
-  // Основной путь: взвешенный случайный выбор по всему пулу.
   const prevId = state.current ? state.current.id : null;
-  return weightedPick(state.pool, prevId);
+  const now = Date.now();
+  const scheduled = state.pool.filter(card => {
+    const p = getCardProgress(card.id);
+    return !p.seenTotal || isMemoryDue(p, now) || state.dueReturns[card.id] !== undefined;
+  });
+
+  // Пока есть новые или подлежащие повторению знаки, очередь строится из них.
+  // Когда очередь пуста, тренажёр остаётся доступным для свободной практики.
+  return weightedPick(scheduled.length ? scheduled : state.pool, prevId);
 }
 
 // после ошибки помечаем, что карточка должна "созреть" для повышенного приоритета через 3-6 вопросов
@@ -908,26 +1078,54 @@ function pushRecentHistory(cardId){
 }
 
 /* ======================================================================
-   6. ЛОГИКА ОТВЕТА: обновление stage/lapses
+   6. ЛОГИКА ОТВЕТА: обновление устойчивости памяти
 ====================================================================== */
 
 function applyAnswer(card, isCorrect){
   const p = getCardProgress(card.id);
+  const now = Date.now();
+  const previousSeen = p.seenTotal;
+  const previousResult = p.lastResult;
+  const previousRetention = getRetrievability(p, now);
+  const previousInterval = getScheduledIntervalMs(p);
   p.seenTotal++;
   state.sessionSeen++;
 
   if(isCorrect){
     p.correctTotal++;
-    p.stage = Math.min(MAX_STAGE, p.stage + 1);
     p.lastResult = "correct";
-    p.dueBoost = Math.floor(p.dueBoost / 2);   // быстрое затухание буста при верном ответе
+    p.dueBoost = Math.floor(p.dueBoost / 2);
+
+    let nextInterval;
+    if(previousSeen === 0 || previousInterval <= 0 || previousResult === "wrong"){
+      nextInterval = FIRST_INTERVAL_MS;
+    } else {
+      // Чем слабее была память к моменту успешного воспоминания, тем сильнее
+      // эффект повторения. Слишком ранний повтор увеличивает интервал лишь немного.
+      const accuracy = p.correctTotal / Math.max(1, p.seenTotal);
+      const spacingGrowth = 1.15 + (1 - previousRetention) * 3.4;
+      const accuracyFactor = 0.9 + accuracy * 0.2;
+      const growth = Math.max(1.12, Math.min(4.5, spacingGrowth * accuracyFactor));
+      nextInterval = Math.max(
+        FIRST_INTERVAL_MS,
+        Math.min(MAX_INTERVAL_MS, previousInterval * growth)
+      );
+    }
+
+    p.stabilityMs = intervalToStability(nextInterval);
+    p.lastReviewedAt = now;
+    p.nextReviewAt = now + nextInterval;
+    p.stage = memoryStageFromInterval(nextInterval);
     state.streak++;
     state.sessionCorrect++;
   } else {
     p.lapses++;
-    p.stage = Math.max(0, p.stage - 2);
     p.lastResult = "wrong";
     p.dueBoost = Math.min(MAX_DUE_BOOST, p.dueBoost + 4);
+    p.stabilityMs = intervalToStability(LAPSE_INTERVAL_MS);
+    p.lastReviewedAt = now;
+    p.nextReviewAt = now + LAPSE_INTERVAL_MS;
+    p.stage = 0;
     state.streak = 0;
     scheduleReturn(card.id);
 
@@ -955,6 +1153,9 @@ const el = {
   statLearning: document.getElementById("statLearning"),
   statMastered: document.getElementById("statMastered"),
   statAccuracy: document.getElementById("statAccuracy"),
+  kanaHeatmap: document.getElementById("kanaHeatmap"),
+  soundToggle: document.getElementById("soundToggle"),
+  speakBtn: document.getElementById("speakBtn"),
   streakNum: document.getElementById("streakNum"),
   cardWrap: document.getElementById("cardWrap"),
   cardDeckTag: document.getElementById("cardDeckTag"),
@@ -978,8 +1179,9 @@ function updateStatsPanel(){
   let due = 0, learning = 0, mastered = 0;
   state.pool.forEach(c => {
     const p = getCardProgress(c.id);
-    if(p.stage >= MASTERED_STAGE) mastered++;
-    else if(p.stage <= 1) due++;
+    const category = getProgressCategory(p);
+    if(category === "mastered") mastered++;
+    else if(category === "due") due++;
     else learning++;
   });
   el.statDue.textContent = due;
@@ -992,6 +1194,238 @@ function updateStatsPanel(){
   } else {
     el.statAccuracy.textContent = "—";
   }
+}
+
+function mixColor(from, to, amount){
+  const value = from.map((channel, index) => Math.round(channel + (to[index] - channel) * amount));
+  return `rgb(${value.join(",")})`;
+}
+
+function getProgressColor(p){
+  if(!p.seenTotal) return { background:"rgb(200,196,188)", foreground:"#3f3b36", label:"ещё не изучался" };
+  const wrong = Math.max(0, p.seenTotal - p.correctTotal);
+  const balance = (p.correctTotal - wrong) / p.seenTotal;
+  const strength = Math.abs(balance) < .01
+    ? 0
+    : Math.min(.92, Math.max(.32, Math.abs(balance) * (.68 + Math.min(1, p.seenTotal / 5) * .32)));
+  const neutral = [200,196,188];
+  const target = balance >= 0 ? [54,142,91] : [194,67,59];
+  const accuracy = Math.round((p.correctTotal / p.seenTotal) * 100);
+  return {
+    background: mixColor(neutral, target, strength),
+    foreground: strength > .48 ? "#fff" : "#302d29",
+    label: `${p.correctTotal} верно из ${p.seenTotal}, точность ${accuracy}%`
+  };
+}
+
+function formatMemoryDuration(ms){
+  if(ms <= 0) return "сейчас";
+  if(ms < HOUR_MS) return `${Math.max(1, Math.round(ms / MINUTE_MS))} мин`;
+  if(ms < DAY_MS) return `${Math.max(1, Math.round(ms / HOUR_MS))} ч`;
+  const days = Math.max(1, Math.round(ms / DAY_MS));
+  if(days < 60) return `${days} дн`;
+  return `${Math.round(days / 30)} мес`;
+}
+
+function getMemoryScheduleLabel(p, now = Date.now()){
+  if(!p.seenTotal) return "новый знак";
+  const retention = Math.round(getRetrievability(p, now) * 100);
+  const untilReview = (p.nextReviewAt || now) - now;
+  const timing = untilReview <= 0
+    ? "повтор просрочен"
+    : `следующий повтор через ${formatMemoryDuration(untilReview)}`;
+  return `память ${retention}%, ${timing}`;
+}
+
+function getProgressCategory(p){
+  if(!p.seenTotal || p.lastResult === "wrong" || isMemoryDue(p)) return "due";
+  if(getScheduledIntervalMs(p) >= MASTERED_INTERVAL_MS) return "mastered";
+  return "learning";
+}
+
+function renderHeatmap(){
+  if(!el.kanaHeatmap) return;
+  el.kanaHeatmap.innerHTML = "";
+  if(!state.pool.length){
+    el.kanaHeatmap.innerHTML = '<div class="heat-empty">В выбранном наборе пока нет знаков.</div>';
+    return;
+  }
+  state.pool.forEach(card => {
+    const p = getCardProgress(card.id);
+    const tone = getProgressColor(p);
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "heat-cell" + (state.current && state.current.id === card.id ? " is-current" : "");
+    cell.textContent = card.kana;
+    cell.style.background = tone.background;
+    cell.style.color = tone.foreground;
+    cell.dataset.progressCategory = getProgressCategory(p);
+    const memoryLabel = getMemoryScheduleLabel(p);
+    cell.title = `${card.kana} · ${card.romaji[0]} · ${tone.label} · ${memoryLabel}`;
+    cell.setAttribute("aria-label", `${card.kana}, ${card.romaji[0]}, ${tone.label}, ${memoryLabel}. Произнести.`);
+    cell.addEventListener("click", () => {
+      if(!state.awaitingNext) speakKana(card.kana, true);
+    });
+    el.kanaHeatmap.appendChild(cell);
+  });
+  if(activeStatFilter) setHeatmapFilter(activeStatFilter);
+}
+
+function setHeatmapFilter(category){
+  activeStatFilter = category || null;
+  const cells = Array.from(el.kanaHeatmap.querySelectorAll(".heat-cell"));
+  el.kanaHeatmap.classList.toggle("has-filter", !!activeStatFilter);
+  cells.forEach(cell => {
+    cell.classList.toggle("is-highlighted", !!activeStatFilter && cell.dataset.progressCategory === activeStatFilter);
+  });
+}
+
+function speakKana(kana, force){
+  return new Promise(resolve => {
+    if((!force && !state.soundEnabled) || !("speechSynthesis" in window) || !kana){
+      resolve();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(kana);
+    utterance.lang = "ja-JP";
+    utterance.rate = .78;
+    utterance.pitch = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const japaneseVoice = voices.find(voice => /^ja[-_]/i.test(voice.lang));
+    if(japaneseVoice) utterance.voice = japaneseVoice;
+
+    let finished = false;
+    const finish = () => {
+      if(finished) return;
+      finished = true;
+      resolve();
+    };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    window.speechSynthesis.speak(utterance);
+    setTimeout(finish, 1800);
+  });
+}
+
+function wait(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getAudioContext(){
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if(!AudioContextClass) return null;
+  if(!audioContext) audioContext = new AudioContextClass();
+  return audioContext;
+}
+
+function addTone(ctx, frequency, startOffset, duration, type, volume){
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const start = ctx.currentTime + startOffset;
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + .025);
+  gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + .03);
+}
+
+function addSweepTone(ctx, startFrequency, endFrequency, startOffset, duration, type, volume){
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const start = ctx.currentTime + startOffset;
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(startFrequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(endFrequency, start + duration);
+  gain.gain.setValueAtTime(.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + .018);
+  gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + .03);
+}
+
+async function playFeedbackTone(isCorrect){
+  if(!state.soundEnabled) return;
+  const ctx = getAudioContext();
+  if(!ctx) return;
+  try{
+    if(ctx.state === "suspended") await ctx.resume();
+    if(isCorrect){
+      addTone(ctx,523.25,.01,.30,"sine",.055);
+      addTone(ctx,659.25,.11,.34,"sine",.05);
+      addTone(ctx,783.99,.23,.42,"triangle",.045);
+      await wait(520);
+    } else {
+      // Отчётливый понижающийся сигнал в диапазоне, который слышен и на небольших динамиках.
+      addTone(ctx,440,.01,.14,"square",.055);
+      addSweepTone(ctx,392,220,.06,.42,"triangle",.10);
+      addSweepTone(ctx,329.63,196,.13,.48,"sine",.075);
+      await wait(640);
+    }
+  }catch(e){
+    // Некоторые браузеры блокируют Web Audio до первого жеста — тренировка продолжится без сигнала.
+  }
+}
+
+function cancelActiveFeedback(){
+  feedbackSequenceId++;
+  if("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if(el.cardWrap){
+    el.cardWrap.classList.remove("is-resolving","is-roulette");
+  }
+  if(el.speakBtn) el.speakBtn.disabled = false;
+}
+
+async function runRoulette(sequenceId){
+  if(sequenceId !== feedbackSequenceId) return;
+  el.cardWrap.classList.add("is-roulette");
+  el.feedbackStrip.innerHTML = '<span class="hint">следующий знак…</span>';
+
+  const candidates = state.pool.filter(candidate => !state.current || candidate.id !== state.current.id);
+  const source = candidates.length ? candidates : state.pool;
+  for(let step=0;step<10;step++){
+    if(sequenceId !== feedbackSequenceId) return;
+    const preview = source[Math.floor(Math.random() * source.length)];
+    if(preview) el.glyph.textContent = preview.kana;
+    await wait(62 + step * 7);
+  }
+
+  if(sequenceId !== feedbackSequenceId) return;
+  el.cardWrap.classList.remove("is-roulette");
+  startQuestion();
+}
+
+async function beginFeedbackSequence(card, isCorrect){
+  const sequenceId = ++feedbackSequenceId;
+  el.cardWrap.classList.add("is-resolving");
+  el.speakBtn.disabled = true;
+
+  if(state.soundEnabled){
+    await playFeedbackTone(isCorrect);
+    if(sequenceId !== feedbackSequenceId) return;
+    await wait(110);
+    if(sequenceId !== feedbackSequenceId) return;
+    await speakKana(card.kana, false);
+  } else {
+    await wait(520);
+  }
+
+  if(sequenceId !== feedbackSequenceId) return;
+  await wait(620);
+  if(sequenceId !== feedbackSequenceId) return;
+  await runRoulette(sequenceId);
+}
+
+function updateSoundControl(){
+  el.soundToggle.setAttribute("aria-pressed", state.soundEnabled ? "true" : "false");
+  el.soundToggle.querySelector(".sound-label").textContent = state.soundEnabled ? "Звук и речь" : "Без звука";
+  el.soundToggle.title = state.soundEnabled ? "Сигнал и произношение после ответа включены" : "Сигнал и произношение после ответа выключены";
 }
 
 function deckLabel(deck){
@@ -1024,6 +1458,9 @@ function resolveCurrentMode(){
 }
 
 function startQuestion(){
+  // Останавливаем предыдущую аудио-последовательность до смены активного знака.
+  cancelActiveFeedback();
+
   if(state.pool.length === 0){
     el.glyph.textContent = "—";
     el.feedbackStrip.innerHTML = "<span class='hint'>Включите хотя бы один набор знаков выше.</span>";
@@ -1064,6 +1501,7 @@ function startQuestion(){
   }
 
   updateStatsPanel();
+  renderHeatmap();
 }
 
 function renderTypeInput(card){
@@ -1089,10 +1527,7 @@ function renderTypeInput(card){
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    if(state.awaitingNext){
-      startQuestion();
-      return;
-    }
+    if(state.awaitingNext) return;
     const val = input.value.trim().toLowerCase();
     if(!val) return;
     const ok = card.romaji.some(r => r.toLowerCase() === val);
@@ -1101,29 +1536,30 @@ function renderTypeInput(card){
 }
 
 function handleTypeResult(card, ok, inputEl){
+  state.awaitingNext = true;
   inputEl.disabled = true;
   inputEl.classList.add(ok ? "right" : "wrong");
   el.glyph.classList.add(ok ? "flash-correct" : "flash-wrong");
 
-  if(ok){
-    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])}</span>`;
-  } else {
-    el.feedbackStrip.innerHTML = `<span class="bad">правильный ответ: ${escapeHtml(card.romaji[0])}</span>`;
-  }
-
   applyAnswer(card, ok);
+  const updatedProgress = getCardProgress(card.id);
+  if(ok){
+    const nextIn = formatMemoryDuration(updatedProgress.nextReviewAt - Date.now());
+    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])} · повтор через ${nextIn}</span>`;
+  } else {
+    el.feedbackStrip.innerHTML = `<span class="bad">правильный ответ: ${escapeHtml(card.romaji[0])} · скоро вернётся</span>`;
+  }
+  renderStageTrack(updatedProgress.stage);
   updateStreakBadge();
   updateStatsPanel();
-  state.awaitingNext = true;
+  renderHeatmap();
 
-  // меняем кнопку формы на "Далее"
+  // Показываем, что следующая карточка появится автоматически после звука и речи.
   const form = document.getElementById("romajiForm");
   const btn = form.querySelector("button[type=submit]");
-  btn.textContent = "Далее →";
-  inputEl.removeEventListener; // no-op, оставлено для ясности структуры
-
-  // Enter уже обработает submit и вызовет startQuestion() благодаря awaitingNext-ветке
-  setTimeout(() => { btn.focus(); }, 10);
+  btn.textContent = "Следующий знак…";
+  btn.disabled = true;
+  beginFeedbackSequence(card, ok);
 }
 
 function renderChoiceInput(card){
@@ -1177,26 +1613,25 @@ function handleChoiceResult(card, chosen, btnEl, grid){
   });
 
   el.glyph.classList.add(ok ? "flash-correct" : "flash-wrong");
-  if(ok){
-    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])}</span>`;
-  } else {
-    el.feedbackStrip.innerHTML = `<span class="bad">верный ответ — ${escapeHtml(card.romaji[0])}</span>`;
-  }
-
   applyAnswer(card, ok);
+  const updatedProgress = getCardProgress(card.id);
+  if(ok){
+    const nextIn = formatMemoryDuration(updatedProgress.nextReviewAt - Date.now());
+    el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])} · повтор через ${nextIn}</span>`;
+  } else {
+    el.feedbackStrip.innerHTML = `<span class="bad">верный ответ — ${escapeHtml(card.romaji[0])} · скоро вернётся</span>`;
+  }
+  renderStageTrack(updatedProgress.stage);
   updateStreakBadge();
   updateStatsPanel();
+  renderHeatmap();
 
-  // добавляем кнопку "Далее"
-  const nextBtn = document.createElement("button");
-  nextBtn.className = "btn";
-  nextBtn.style.gridColumn = "1 / -1";
-  nextBtn.style.marginTop = "2px";
-  nextBtn.textContent = "Далее →";
-  nextBtn.type = "button";
-  nextBtn.addEventListener("click", startQuestion);
-  grid.appendChild(nextBtn);
-  setTimeout(() => nextBtn.focus(), 10);
+  const transitionNote = document.createElement("div");
+  transitionNote.className = "transition-note";
+  transitionNote.textContent = "Слушаем произношение — затем следующий знак";
+  transitionNote.setAttribute("role","status");
+  grid.appendChild(transitionNote);
+  beginFeedbackSequence(card, ok);
 }
 
 /* ======================================================================
@@ -1273,6 +1708,7 @@ function persistSettings(){
     answerMode: state.answerMode,
     includeDakuten: state.includeDakuten,
     includeYoon: state.includeYoon,
+    soundEnabled: state.soundEnabled,
   });
 }
 
@@ -1283,19 +1719,41 @@ function applySavedSettings(){
   state.answerMode = saved.answerMode || state.answerMode;
   state.includeDakuten = !!saved.includeDakuten;
   state.includeYoon = !!saved.includeYoon;
+  state.soundEnabled = saved.soundEnabled !== false;
 
   setActiveChip(el.deckChips, "deck", state.deckFilter);
   setActiveChip(el.modeChips, "mode", state.answerMode);
   if(state.includeDakuten) el.swDakuten.classList.add("on");
   if(state.includeYoon) el.swYoon.classList.add("on");
+  updateSoundControl();
 }
+
+el.soundToggle.addEventListener("click", () => {
+  state.soundEnabled = !state.soundEnabled;
+  updateSoundControl();
+  persistSettings();
+  if(!state.soundEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  if(state.soundEnabled && state.current && !state.awaitingNext) speakKana(state.current.kana, true);
+});
+
+el.speakBtn.addEventListener("click", () => {
+  if(state.current) speakKana(state.current.kana, true);
+});
+
+document.querySelectorAll("[data-stat-filter]").forEach(stat => {
+  const category = stat.dataset.statFilter;
+  stat.addEventListener("mouseenter", () => setHeatmapFilter(category));
+  stat.addEventListener("mouseleave", () => setHeatmapFilter(null));
+  stat.addEventListener("focus", () => setHeatmapFilter(category));
+  stat.addEventListener("blur", () => setHeatmapFilter(null));
+});
 
 /* ======================================================================
    11. СБРОС ПРОГРЕССА / СПРАВКА
 ====================================================================== */
 
 el.btnReset.addEventListener("click", () => {
-  const ok = window.confirm("Сбросить весь сохранённый прогресс (этапы изучения по всем знакам)? Это нельзя отменить.");
+  const ok = window.confirm("Сбросить весь сохранённый прогресс, устойчивость памяти и даты повторения по всем знакам? Это нельзя отменить.");
   if(!ok) return;
   progress = {};
   saveProgress(progress);
@@ -1340,6 +1798,8 @@ document.addEventListener("keydown", (e) => {
 ====================================================================== */
 
 applySavedSettings();
+updateSoundControl();
+migrateProgressToForgettingCurve();
 buildPool();
 updateStreakBadge();
 startQuestion();
