@@ -353,6 +353,21 @@
   .feedback-strip .bad{ color:var(--seal); font-weight:600; }
   .feedback-strip .hint{ color:var(--ink-soft); }
 
+  .card-wrap.is-resting .glyph{
+    color:var(--moss);
+    font-size:96px;
+  }
+  .card-wrap.is-resting .speak-btn{display:none}
+  .card-wrap.is-resting .glyph-zone{padding-bottom:0}
+  .study-rest{
+    max-width:560px;margin:0 auto;text-align:center;padding:18px 22px 20px;
+    border-radius:16px;background:var(--paper-soft);
+  }
+  .study-rest h2{margin:0 0 7px;font:700 20px var(--serif);color:var(--ink)}
+  .study-rest-time{margin:0;font:700 18px var(--sans);color:var(--moss)}
+  .study-rest-note{margin:7px 0 15px;font-size:12px;line-height:1.5;color:var(--ink-soft)}
+  .study-rest .btn{padding:10px 17px;font-size:12px}
+
   /* ============ ВВОД: РОМАДЗИ ============ */
   .answer-zone{
     padding:8px 28px 28px;
@@ -468,7 +483,9 @@
 
     .card-top{ padding:14px 16px 0; }
     .glyph{ font-size:92px; }
+    .card-wrap.is-resting .glyph{font-size:72px}
     .answer-zone{ padding:6px 16px 22px; }
+    .study-rest{padding:16px 14px 18px}.study-rest h2{font-size:18px}.study-rest-time{font-size:16px}
     .romaji-form{ flex-direction:column; }
     .romaji-form .btn{ width:100%; }
     .choices-grid{ grid-template-columns:1fr; }
@@ -843,7 +860,7 @@
 
   <footer class="note">
     Прогресс сохраняется в этом браузере (<b>localStorage</b>) — закрытие вкладки его не сотрёт.<br>
-    Карточки, в которых вы чаще ошибаетесь, будут попадаться <b>заметно чаще</b>, пока вы не ответите верно несколько раз подряд.
+    Карточка с ошибкой обязательно вернётся через несколько вопросов и останется в очереди, пока вы не <b>исправите ответ</b>.
   </footer>
 
   </section>
@@ -908,10 +925,10 @@
     <ul>
       <li>новые и просроченные карточки получают наибольший приоритет;</li>
       <li>верный ответ увеличивает устойчивость памяти и отодвигает следующий повтор — сначала на минуты, затем на часы, дни и месяцы;</li>
-      <li>ошибка уменьшает устойчивость и возвращает карточку через несколько вопросов, а также назначает близкий повтор по времени;</li>
+      <li>ошибка уменьшает устойчивость и обязательно возвращает карточку через 2–4 других ответа (или сразу, если очередь пуста); трудный знак остаётся в текущей сессии, пока вы не ответите верно;</li>
       <li>карточка считается освоенной, когда рассчитанный интервал достигает нескольких недель.</li>
     </ul>
-    <p>Целевая вероятность удержания — 85%. Если расчётная вероятность падает ниже неё, знак попадает в «К повторению». Время последнего ответа и следующего повтора сохраняется в браузере между сессиями.</p>
+    <p>Целевая вероятность удержания — 85%. Если расчётная вероятность падает ниже неё, знак попадает в «К повторению». Когда новых и просроченных карточек больше нет и все ошибки исправлены, тренировка ставится на паузу и показывает, через сколько вернуться. Время последнего ответа и следующего повтора сохраняется в браузере между сессиями.</p>
     <p>Во вкладке «Статистика» сохраняются ежедневная активность, время ответов, точность и серии занятий. Там же показан прогноз будущих повторений по расписанию Эббингауза.</p>
     <p>Кнопка с луной или солнцем переключает дневное и ночное оформление всего тренажёра. Выбранная тема сохраняется в этом браузере.</p>
     <p>Серия (печать в правом верхнем углу) — это число подряд правильных ответов. Она сбрасывается при любой ошибке, но не влияет на сохранённый прогресс по карточкам.</p>
@@ -1181,6 +1198,7 @@ const state = {
   sessionCorrect: 0,
   sessionMistakes: {},        // id -> { card, wrongCount, attempts }
   awaitingNext: false,        // true, пока показан фидбек и ждём следующий вопрос
+  resting: false,             // true, когда доступные сейчас повторения закончились
   sessionSeenMap: {},         // id -> сколько раз карточка показана В ЭТОЙ сессии (не путать с p.seenTotal)
 };
 
@@ -1190,6 +1208,7 @@ let activeStatFilter = null;
 let selectedStatsYear = new Date().getFullYear();
 let viewSwitching = false;
 let themeTransitionTimer = 0;
+let reviewWakeTimer = 0;
 
 /* ======================================================================
    4. ПОСТРОЕНИЕ ПУЛА КАРТОЧЕК ПО ФИЛЬТРАМ
@@ -1210,8 +1229,8 @@ function buildPool(){
 
    Для каждой карточки считается вероятность воспоминания R=e^(-t/S).
    Новые и карточки ниже целевого удержания получают высокий приоритет.
-   Карточки, которые ещё хорошо помнятся, остаются доступны для свободной
-   тренировки, но выбираются значительно реже.
+   Ошибочные карточки возвращаются в текущей сессии, а когда доступная
+   очередь исчерпана, тренажёр ждёт ближайшего срока повторения.
 ====================================================================== */
 
 const RECENCY_WINDOW = 4;     // сколько последних показов помним для анти-повтора
@@ -1273,19 +1292,29 @@ function pickNextCard(){
   tickPendingReturns();
   const prevId = state.current ? state.current.id : null;
   const now = Date.now();
+
+  // Созревшие возвраты после ошибки идут раньше новых и обычных повторений.
+  const retryCards = state.pool.filter(card => state.dueReturns[card.id] !== undefined);
+  if(retryCards.length) return weightedPick(retryCards, prevId);
+
+  const pendingRetryIds = new Set((state._pendingReturns || []).map(item => item.id));
   const scheduled = state.pool.filter(card => {
     const p = getCardProgress(card.id);
-    return !p.seenTotal || isMemoryDue(p, now) || state.dueReturns[card.id] !== undefined;
+    return !p.seenTotal
+      || isMemoryDue(p, now)
+      || (p.lastResult === "wrong" && !pendingRetryIds.has(card.id));
   });
 
-  // Пока есть новые или подлежащие повторению знаки, очередь строится из них.
-  // Когда очередь пуста, тренажёр остаётся доступным для свободной практики.
-  return weightedPick(scheduled.length ? scheduled : state.pool, prevId);
+  if(scheduled.length) return weightedPick(scheduled, prevId);
+
+  // Если других карточек уже нет, не завершаем сессию после ошибки:
+  // возвращаем самый ранний отложенный трудный знак и ждём верного ответа.
+  return releaseEarliestPendingReturn();
 }
 
-// после ошибки помечаем, что карточка должна "созреть" для повышенного приоритета через 3-6 вопросов
+// После ошибки знак возвращается через 2-4 других ответа.
 function scheduleReturn(cardId){
-  const delay = 3 + Math.floor(Math.random() * 4); // 3..6
+  const delay = 2 + Math.floor(Math.random() * 3); // 2..4
   state._pendingReturns = state._pendingReturns || [];
   // если возврат для этой карточки уже запланирован — не плодим дубли, просто оставляем самый ранний
   const existing = state._pendingReturns.find(pr => pr.id === cardId);
@@ -1294,6 +1323,25 @@ function scheduleReturn(cardId){
   } else {
     state._pendingReturns.push({ id: cardId, after: state.sessionSeen + delay });
   }
+}
+
+function clearSessionReturn(cardId){
+  delete state.dueReturns[cardId];
+  if(state._pendingReturns){
+    state._pendingReturns = state._pendingReturns.filter(item => item.id !== cardId);
+  }
+}
+
+function releaseEarliestPendingReturn(){
+  if(!state._pendingReturns || !state._pendingReturns.length) return null;
+  const poolIds = new Set(state.pool.map(card => card.id));
+  const candidates = state._pendingReturns.filter(item => poolIds.has(item.id));
+  if(!candidates.length) return null;
+
+  const earliest = candidates.reduce((best,item) => item.after < best.after ? item : best);
+  state._pendingReturns = state._pendingReturns.filter(item => item !== earliest);
+  state.dueReturns[earliest.id] = state.sessionSeen;
+  return state.pool.find(card => card.id === earliest.id) || null;
 }
 
 // переносит "созревшие" таймеры из _pendingReturns в dueReturns (карта id -> момент созревания)
@@ -1363,6 +1411,7 @@ function applyAnswer(card, isCorrect){
   state.sessionSeen++;
 
   if(isCorrect){
+    clearSessionReturn(card.id);
     p.correctTotal++;
     p.lastResult = "correct";
     p.dueBoost = Math.floor(p.dueBoost / 2);
@@ -1529,9 +1578,88 @@ function formatMemoryDuration(ms){
   return `${Math.round(days / 30)} мес`;
 }
 
+function pluralRu(value, one, few, many){
+  const mod100 = Math.abs(value) % 100;
+  const mod10 = mod100 % 10;
+  if(mod100 >= 11 && mod100 <= 19) return many;
+  if(mod10 === 1) return one;
+  if(mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+
+function formatRestDuration(ms){
+  if(ms < MINUTE_MS) return "меньше чем через минуту";
+  const minutes = Math.max(1, Math.ceil(ms / MINUTE_MS));
+  if(minutes < 60) return `через ${minutes} ${pluralRu(minutes,"минуту","минуты","минут")}`;
+  const hours = Math.ceil(ms / HOUR_MS);
+  if(hours < 24) return `через ${hours} ${pluralRu(hours,"час","часа","часов")}`;
+  const days = Math.ceil(ms / DAY_MS);
+  return `через ${days} ${pluralRu(days,"день","дня","дней")}`;
+}
+
+function getNextReviewAt(){
+  const reviewTimes = state.pool
+    .map(card => getCardProgress(card.id))
+    .filter(p => p.seenTotal > 0 && Number.isFinite(p.nextReviewAt))
+    .map(p => p.nextReviewAt);
+  return reviewTimes.length ? Math.min(...reviewTimes) : null;
+}
+
+function updateRestCountdown(){
+  if(!state.resting) return;
+  clearTimeout(reviewWakeTimer);
+
+  const now = Date.now();
+  const nextReviewAt = getNextReviewAt();
+  if(nextReviewAt !== null && nextReviewAt <= now){
+    startQuestion();
+    return;
+  }
+
+  const restTime = document.getElementById("restTime");
+  if(restTime){
+    restTime.textContent = nextReviewAt === null
+      ? "На сегодня всё"
+      : `Приходите ${formatRestDuration(nextReviewAt - now)}`;
+  }
+
+  if(nextReviewAt !== null){
+    const untilWake = Math.max(1000, Math.min(30000, nextReviewAt - now + 50));
+    reviewWakeTimer = window.setTimeout(updateRestCountdown, untilWake);
+  }
+}
+
+function renderRestState(){
+  state.current = null;
+  state.awaitingNext = false;
+  state.resting = true;
+  el.cardWrap.classList.add("is-resting");
+  el.cardDeckTag.textContent = "ПОВТОРЕНИЯ ЗАВЕРШЕНЫ";
+  el.cardQueueInfo.textContent = "ПАУЗА";
+  el.stageTrack.innerHTML = "";
+  el.glyph.classList.remove("entering","flash-correct","flash-wrong");
+  el.glyph.textContent = "休";
+  el.speakBtn.disabled = true;
+  el.feedbackStrip.innerHTML = '<span class="hint">Все доступные карточки отвечены правильно.</span>';
+  el.answerZone.innerHTML = `
+    <div class="study-rest" role="status">
+      <h2>Отличная работа!</h2>
+      <p class="study-rest-time" id="restTime">Рассчитываем следующее повторение…</p>
+      <p class="study-rest-note">Когда срок наступит, тренировка продолжится автоматически.</p>
+      <button class="btn secondary" id="checkReviewsNow" type="button">Проверить сейчас</button>
+    </div>
+  `;
+  el.inkFill.style.width = "100%";
+  document.getElementById("checkReviewsNow").addEventListener("click", startQuestion);
+  updateStatsPanel();
+  renderHeatmap();
+  updateRestCountdown();
+}
+
 function getMemoryScheduleLabel(p, now = Date.now()){
   if(!p.seenTotal) return "новый знак";
   const retention = Math.round(getRetrievability(p, now) * 100);
+  if(p.lastResult === "wrong") return `память ${retention}%, ошибка ждёт повторения`;
   const untilReview = (p.nextReviewAt || now) - now;
   const timing = untilReview <= 0
     ? "повтор просрочен"
@@ -1976,19 +2104,30 @@ function resolveCurrentMode(){
 
 function startQuestion(){
   // Останавливаем предыдущую аудио-последовательность до смены активного знака.
+  clearTimeout(reviewWakeTimer);
   cancelActiveFeedback();
+  state.resting = false;
+  el.cardWrap.classList.remove("is-resting");
 
   if(state.pool.length === 0){
+    state.current = null;
     el.glyph.textContent = "—";
     el.feedbackStrip.innerHTML = "<span class='hint'>Включите хотя бы один набор знаков выше.</span>";
     el.answerZone.innerHTML = "";
+    el.speakBtn.disabled = true;
     return;
   }
 
   const card = pickNextCard();
+  if(!card){
+    renderRestState();
+    return;
+  }
+
   state.current = card;
   state.currentMode = resolveCurrentMode();
   state.awaitingNext = false;
+  el.speakBtn.disabled = false;
 
   delete state.dueReturns[card.id];   // карточка показана — снимаем бонус "созрела для возврата"
   state.sessionSeenMap[card.id] = (state.sessionSeenMap[card.id] || 0) + 1;
@@ -2064,7 +2203,7 @@ function handleTypeResult(card, ok, inputEl){
     const nextIn = formatMemoryDuration(updatedProgress.nextReviewAt - Date.now());
     el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])} · повтор через ${nextIn}</span>`;
   } else {
-    el.feedbackStrip.innerHTML = `<span class="bad">правильный ответ: ${escapeHtml(card.romaji[0])} · скоро вернётся</span>`;
+    el.feedbackStrip.innerHTML = `<span class="bad">правильный ответ: ${escapeHtml(card.romaji[0])} · повторим ещё в этой сессии</span>`;
   }
   renderStageTrack(updatedProgress.stage);
   updateStreakBadge();
@@ -2136,7 +2275,7 @@ function handleChoiceResult(card, chosen, btnEl, grid){
     const nextIn = formatMemoryDuration(updatedProgress.nextReviewAt - Date.now());
     el.feedbackStrip.innerHTML = `<span class="ok">верно — ${escapeHtml(card.romaji[0])} · повтор через ${nextIn}</span>`;
   } else {
-    el.feedbackStrip.innerHTML = `<span class="bad">верный ответ — ${escapeHtml(card.romaji[0])} · скоро вернётся</span>`;
+    el.feedbackStrip.innerHTML = `<span class="bad">верный ответ — ${escapeHtml(card.romaji[0])} · повторим ещё в этой сессии</span>`;
   }
   renderStageTrack(updatedProgress.stage);
   updateStreakBadge();
@@ -2328,6 +2467,12 @@ el.closeHelp.addEventListener("click", () => { el.helpModal.style.display = "non
 el.helpModal.addEventListener("click", (e) => { if(e.target === el.helpModal) el.helpModal.style.display = "none"; });
 document.addEventListener("keydown", (e) => {
   if(e.key === "Escape" && el.helpModal.style.display === "flex") el.helpModal.style.display = "none";
+});
+document.addEventListener("visibilitychange", () => {
+  if(!document.hidden && state.resting) updateRestCountdown();
+});
+window.addEventListener("focus", () => {
+  if(state.resting) updateRestCountdown();
 });
 
 /* ======================================================================
