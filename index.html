@@ -59,7 +59,7 @@
     --knowledge-green:#4C9871;
     --r-card: 16px;
     --serif: "Noto Serif JP","Noto Serif CJK JP","Hiragino Mincho ProN","Yu Mincho","MS Mincho",serif;
-    --sans: "Noto Sans JP","Noto Sans CJK JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --sans: "Noto Sans JP",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
     --mono: "JetBrains Mono","SF Mono","Consolas",monospace;
   }
 
@@ -694,7 +694,13 @@
     display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:minmax(4px,1fr);
     gap:3px;width:100%;margin-bottom:12px;
   }
-  .activity-cell{min-width:0;border-radius:2px;background:var(--activity-0);border:1px solid var(--activity-border)}
+  .activity-cell{min-width:0;border-radius:2px;background:var(--activity-0);border:1px solid var(--activity-border);padding:0}
+  button.activity-cell{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
+  button.activity-cell:hover,button.activity-cell:focus-visible{transform:scale(1.3);box-shadow:0 0 0 2px var(--paper),0 0 0 3px var(--moss);z-index:1;outline:none}
+  .activity-cell.is-selected{box-shadow:0 0 0 2px var(--paper),0 0 0 3px var(--seal);z-index:1}
+  .calendar-detail{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--paper-soft);border-radius:12px;padding:14px 16px;margin:0 0 20px;min-height:74px}
+  .calendar-detail strong{font-size:13px}.calendar-detail p{margin:5px 0 0;color:var(--ink-soft);font-size:12px;line-height:1.7}
+  .calendar-detail .day-accuracy{font:700 24px var(--serif);color:var(--moss);white-space:nowrap}
   .activity-cell.is-empty{background:transparent;border-color:transparent}
   .activity-cell.level-1{background:var(--activity-1)}.activity-cell.level-2{background:var(--activity-2)}
   .activity-cell.level-3{background:var(--activity-3)}.activity-cell.level-4{background:var(--activity-4)}
@@ -725,9 +731,10 @@
 
   /* Живая карта, сравнение наборов и резервные копии */
   .ambient-kana{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-  .ambient-kana span{position:absolute;top:var(--top);left:var(--left);font:500 var(--size,52px) var(--serif);color:var(--moss);opacity:.09;animation:kanaDrift var(--duration,24s) ease-in-out var(--delay,0s) infinite alternate;will-change:transform}
-  .ambient-kana span:nth-child(even){color:var(--seal)}
-  @keyframes kanaDrift{from{transform:translate3d(-14px,26px,0) rotate(-13deg)}to{transform:translate3d(26px,-36px,0) rotate(16deg)}}
+  .ambient-kana span{position:absolute;top:var(--top);left:clamp(2px,calc((100vw - 1040px)/4 - 32px),110px);font:700 clamp(38px,5vw,var(--size,82px)) var(--serif);color:var(--moss);opacity:.42;text-shadow:0 8px 30px var(--page-glow-moss);animation:kanaDrift var(--duration,12s) ease-in-out var(--delay,0s) infinite;will-change:transform}
+  .ambient-kana span:nth-child(even){left:auto;right:clamp(2px,calc((100vw - 1040px)/4 - 32px),110px);color:var(--seal);text-shadow:0 8px 30px var(--page-glow-seal);animation-direction:reverse}
+  html[data-theme="dark"] .ambient-kana span{opacity:.55}
+  @keyframes kanaDrift{0%,100%{transform:translate3d(-5px,20px,0) rotate(-12deg)}50%{transform:translate3d(10px,-38px,0) rotate(14deg)}}
   html[data-motion="off"] .ambient-kana{display:none}
   html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .panel,.progress-panel,.stats-detail-card{transition:box-shadow .25s ease,border-color .25s ease}
@@ -749,15 +756,20 @@
   .deck-chart h3{font:600 16px var(--serif);margin:0 0 10px}
   .donut-button{display:block;position:relative;width:160px;height:160px;appearance:none;background:none;border:0;padding:0;cursor:pointer;border-radius:50%;color:var(--ink);transition:transform .25s ease}
   .donut-button:hover{transform:scale(1.045)}
+  .donut-button:focus-visible{outline:2px solid var(--seal);outline-offset:5px}
+  .donut-button:hover .donut-center small{color:var(--seal)}
   .donut-svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
   .donut-track{fill:none;stroke:var(--paper-soft);stroke-width:12}
-  .donut-correct,.donut-wrong{fill:none;stroke-width:12;transition:stroke-dasharray .65s ease,stroke-dashoffset .65s ease}
+  .donut-correct,.donut-wrong{fill:none;stroke-width:12;pointer-events:stroke;transition:stroke-dasharray .65s ease,stroke-dashoffset .65s ease,stroke-width .2s ease}
+  .donut-correct:hover,.donut-wrong:hover{stroke-width:16}
   .donut-correct{stroke:var(--moss)}.donut-wrong{stroke:var(--seal)}
   .donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
   .donut-center strong{font:700 29px var(--serif)}.donut-center small{font-size:11px;color:var(--ink-soft);margin-top:2px}
   .deck-summary{font-size:12px;line-height:1.7;color:var(--ink-soft);margin:10px 0}
   .deck-breakdown{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;font-size:11px;color:var(--ink-soft)}
   .deck-breakdown span{display:inline-flex;gap:5px;align-items:center}
+  .deck-breakdown button{display:inline-flex;gap:5px;align-items:center;border:0;border-bottom:1px dashed var(--line-strong);background:none;padding:3px 1px;color:inherit;font:inherit;cursor:pointer}
+  .deck-breakdown button:hover{color:var(--ink)}
   .deck-breakdown i{width:7px;height:7px;border-radius:50%;background:var(--moss)}
   .deck-breakdown .wrong i{background:var(--seal)}
   .weak-signs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;min-height:38px}
@@ -769,7 +781,41 @@
   .comparison-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0 0;font-size:11px;color:var(--ink-soft)}
   .comparison-legend span{display:flex;align-items:center;gap:6px}.comparison-legend i{width:8px;height:8px;border-radius:50%;background:var(--moss)}
   .comparison-legend .wrong i{background:var(--seal)}
-  @media(max-width:1320px){.ambient-kana{display:none}}
+  .ring-open-hint{font-size:11px;color:var(--seal);margin:10px 0 0}
+  .stats-dialog{width:min(850px,calc(100vw - 32px));max-height:85dvh;padding:0;border:1px solid var(--line-strong);border-radius:24px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow);overflow:auto}
+  .stats-dialog::backdrop{background:var(--overlay);backdrop-filter:blur(5px)}
+  .stats-dialog[open]{animation:viewEnter .28s ease both}
+  .stats-dialog-body{padding:26px}
+  .stats-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
+  .stats-dialog-head h2{font:700 23px var(--serif);margin:0 0 5px}
+  .stats-dialog-head p{color:var(--ink-soft);font-size:12px;margin:0;line-height:1.6}
+  .stats-close{flex-shrink:0;width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:var(--paper-soft);color:var(--ink);font-size:22px;cursor:pointer}
+  .explorer-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+  .explorer-metric{padding:14px;border-radius:12px;background:var(--paper-soft)}
+  .explorer-metric strong{display:block;font:700 24px var(--serif);color:var(--moss)}
+  .explorer-metric span{font-size:11px;color:var(--ink-soft)}
+  .explorer-filters{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 14px}
+  .explorer-filter{border:1px solid var(--line);border-radius:20px;background:var(--paper-soft);padding:7px 12px;color:var(--ink-soft);font:500 12px var(--sans);cursor:pointer}
+  .explorer-filter[aria-pressed="true"]{color:var(--paper);background:var(--ink);border-color:var(--ink)}
+  .explorer-tools{display:flex;gap:10px;margin-bottom:12px}
+  .explorer-tools input,.explorer-tools select{min-width:0;border:1px solid var(--line-strong);border-radius:9px;padding:10px 12px;background:var(--paper-soft);color:var(--ink);font:400 12px var(--sans)}
+  .explorer-tools input{flex:1;width:100%}
+  .explorer-count{font-size:11px;color:var(--ink-soft);margin:0 0 10px}
+  .explorer-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:330px;overflow:auto;padding:3px}
+  .explorer-card{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+  .explorer-card:hover{transform:translateY(-2px);border-color:var(--moss)}
+  .explorer-card[aria-pressed="true"]{border-color:var(--seal);box-shadow:inset 0 0 0 1px var(--seal)}
+  .explorer-glyph{font:600 27px var(--serif);min-width:38px;text-align:center}
+  .explorer-card-copy{flex:1;min-width:0}.explorer-card-copy strong{font:500 12px var(--mono)}
+  .explorer-card-copy small{display:block;margin-top:4px;font-size:10px;color:var(--ink-soft);line-height:1.5}
+  .explorer-accuracy{font:600 12px var(--mono);color:var(--moss)}
+  .explorer-card.has-errors .explorer-accuracy{color:var(--seal)}
+  .explorer-empty{grid-column:1/-1;padding:24px;text-align:center;color:var(--ink-soft);font-size:13px}
+  .explorer-detail{margin-top:16px;display:flex;align-items:center;gap:16px;padding:15px;border-radius:12px;background:var(--paper-soft)}
+  .explorer-detail[hidden]{display:none}.explorer-detail .detail-glyph{font:600 38px var(--serif)}
+  .explorer-speak{flex-shrink:0;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:18px}
+  @media(max-width:1080px){.ambient-kana span{opacity:.28;font-size:48px}.ambient-kana span:nth-child(3),.ambient-kana span:nth-child(4){display:none}}
+  @media(max-width:640px){.ambient-kana span{font-size:38px;opacity:.2}.stats-dialog-body{padding:18px}.stats-dialog-head h2{font-size:19px}.explorer-metrics{grid-template-columns:repeat(2,1fr)}.explorer-list{grid-template-columns:repeat(2,minmax(0,1fr))}.explorer-tools{flex-direction:column}.explorer-detail{gap:10px;flex-wrap:wrap}.calendar-detail{padding:12px;gap:10px}.calendar-detail .day-accuracy{font-size:20px}}
   @media(max-width:640px){.knowledge-detail{gap:10px;padding:12px;align-items:flex-start}.knowledge-detail .detail-glyph{font-size:29px;min-width:36px}.detail-chip{display:block;margin:3px 0 0}.deck-comparison{gap:12px}.donut-button{width:130px;height:130px}.donut-center strong{font-size:24px}.progress-actions{gap:12px}.chart-detail{margin-top:14px}}
   @media(max-width:380px){.donut-button{width:112px;height:112px}.deck-chart h3{font-size:14px}.deck-summary{font-size:11px}}
   @media(prefers-reduced-motion:reduce){.ambient-kana{display:none}.heat-cell,.donut-button,.weak-sign,.donut-correct,.donut-wrong{transition:none}}
@@ -790,12 +836,12 @@
 
 <div class="paper-noise" aria-hidden="true"></div>
 <div class="ambient-kana" aria-hidden="true">
-  <span style="--left:3%;--top:15%;--duration:23s;--delay:-5s">あ</span>
-  <span style="--left:92%;--top:12%;--duration:29s;--delay:-11s">ア</span>
-  <span style="--left:7%;--top:47%;--duration:26s;--delay:-14s;--size:65px">き</span>
-  <span style="--left:88%;--top:43%;--duration:21s;--delay:-7s">カ</span>
-  <span style="--left:2%;--top:78%;--duration:31s;--delay:-17s">ゆ</span>
-  <span style="--left:94%;--top:76%;--duration:25s;--delay:-4s;--size:60px">ネ</span>
+  <span style="--top:14%;--duration:11s;--delay:-3s">あ</span>
+  <span style="--top:10%;--duration:14s;--delay:-5s">ア</span>
+  <span style="--top:46%;--duration:13s;--delay:-7s;--size:94px">き</span>
+  <span style="--top:43%;--duration:10s;--delay:-4s">カ</span>
+  <span style="--top:77%;--duration:15s;--delay:-9s">ゆ</span>
+  <span style="--top:76%;--duration:12s;--delay:-2s;--size:90px">ネ</span>
 </div>
 
 <div class="frame">
@@ -944,7 +990,7 @@
         <button class="calendar-control" id="statsNextYear" type="button" aria-label="Следующий год">→</button>
       </div>
 
-      <div class="activity-calendar" id="activityCalendar" role="img" aria-label="Календарь активности за год"></div>
+      <div class="activity-calendar" id="activityCalendar" role="group" aria-label="Календарь активности за год"></div>
       <div class="calendar-foot">
         <span id="calendarRangeLabel">Активность за год</span>
         <div class="calendar-legend" aria-label="Интенсивность: от отсутствия занятий до высокой активности">
@@ -952,6 +998,7 @@
         </div>
       </div>
 
+      <div class="calendar-detail" id="calendarDayDetail" aria-live="polite"></div>
       <div class="anki-metrics">
         <div class="anki-metric"><span class="value" id="metricDailyAverage">0</span><span class="label">Среднее за учебный день</span></div>
         <div class="anki-metric"><span class="value" id="metricStudyDays">0%</span><span class="label">Дней с занятиями</span></div>
@@ -963,7 +1010,7 @@
 
     <section class="stats-detail-card" aria-labelledby="deckComparisonTitle">
       <h2 id="deckComparisonTitle">Хирагана и катакана</h2>
-      <p>Кольцо показывает долю верных ответов. Нажмите на диаграмму или трудный знак для подробностей. Учитываются все знаки, включая дакутэн и ёон.</p>
+      <p>Нажмите на кольцо — откроется список знаков с точностью и ошибками. Красный сектор покажет трудные знаки, зелёный — знаки с верными ответами. Учитываются дакутэн и ёон.</p>
       <div class="deck-comparison" id="deckComparison"></div>
       <div class="comparison-legend"><span><i aria-hidden="true"></i>Верные ответы</span><span class="wrong"><i aria-hidden="true"></i>Ошибки</span></div>
       <p class="deck-verdict" id="deckVerdict"></p>
@@ -993,6 +1040,26 @@
   </section>
 
 </div>
+
+<dialog class="stats-dialog" id="deckStatsDialog" aria-labelledby="deckStatsTitle">
+  <div class="stats-dialog-body">
+    <header class="stats-dialog-head">
+      <div><h2 id="deckStatsTitle">Подробная статистика</h2><p id="deckStatsSubtitle">Все знаки набора и расписание повторений</p></div>
+      <button class="stats-close" id="closeDeckStats" type="button" aria-label="Закрыть подробную статистику" autofocus>×</button>
+    </header>
+    <div class="explorer-metrics" id="deckStatsMetrics"></div>
+    <div class="explorer-filters" id="deckStatsFilters" aria-label="Фильтр знаков"></div>
+    <div class="explorer-tools">
+      <input id="deckStatsSearch" type="search" placeholder="Найти знак или ромадзи…" aria-label="Поиск знака или ромадзи">
+      <select id="deckStatsSort" aria-label="Сортировка знаков">
+        <option value="weak">Сначала трудные</option><option value="errors">Больше ошибок</option><option value="answers">Больше ответов</option><option value="kana">Порядок азбуки</option>
+      </select>
+    </div>
+    <p class="explorer-count" id="deckStatsCount" role="status"></p>
+    <div class="explorer-list" id="deckStatsList" aria-label="Знаки набора"></div>
+    <div class="explorer-detail" id="deckStatsCardDetail" aria-live="polite" hidden></div>
+  </div>
+</dialog>
 
 <div class="modal-overlay" id="helpModal" style="display:none">
   <div class="modal">
@@ -1291,6 +1358,12 @@ let themeTransitionTimer = 0;
 let reviewWakeTimer = 0;
 let inspectedCardId = null;
 let chartSelection = null;
+let selectedCalendarDay = null;
+const deckExplorer = {deck:"hiragana",filter:"all",query:"",sort:"weak",cardId:null};
+const DECK_STATS_FILTERS = [
+  ["all","Все знаки"],["errors","С ошибками"],["correct","Верные ответы"],
+  ["due","К повторению"],["learning","Изучаются"],["mastered","Освоены"],["new","Новые"]
+];
 
 /* ======================================================================
    4. ПОСТРОЕНИЕ ПУЛА КАРТОЧЕК ПО ФИЛЬТРАМ
@@ -1561,6 +1634,18 @@ const el = {
   deckComparison: document.getElementById("deckComparison"),
   deckVerdict: document.getElementById("deckVerdict"),
   chartDetail: document.getElementById("chartDetail"),
+  calendarDayDetail: document.getElementById("calendarDayDetail"),
+  deckStatsDialog: document.getElementById("deckStatsDialog"),
+  deckStatsTitle: document.getElementById("deckStatsTitle"),
+  deckStatsSubtitle: document.getElementById("deckStatsSubtitle"),
+  deckStatsMetrics: document.getElementById("deckStatsMetrics"),
+  deckStatsFilters: document.getElementById("deckStatsFilters"),
+  deckStatsSearch: document.getElementById("deckStatsSearch"),
+  deckStatsSort: document.getElementById("deckStatsSort"),
+  deckStatsCount: document.getElementById("deckStatsCount"),
+  deckStatsList: document.getElementById("deckStatsList"),
+  deckStatsCardDetail: document.getElementById("deckStatsCardDetail"),
+  closeDeckStats: document.getElementById("closeDeckStats"),
   btnExport: document.getElementById("btnExport"),
   btnImport: document.getElementById("btnImport"),
   btnMotion: document.getElementById("btnMotion"),
@@ -1886,6 +1971,31 @@ function getHistoryTotals(){
   return { entries,activeDays,totalReviews,totalSeconds,longestStreak,currentStreak,spanDays };
 }
 
+function getCalendarDaySummary(key){
+  const data = studyHistory[key] || {reviews:0,correct:0,seconds:0,newCards:0};
+  const reviews = data.reviews || 0;
+  return {key,reviews,correct:data.correct || 0,errors:reviews - (data.correct || 0),
+    seconds:data.seconds || 0,newCards:data.newCards || 0,
+    accuracy:reviews ? Math.round((data.correct || 0) / reviews * 100) : null};
+}
+
+function showCalendarDay(key, pin = false){
+  if(pin){
+    selectedCalendarDay = key;
+    el.activityCalendar.querySelectorAll("button.activity-cell").forEach(cell => {
+      const selected = cell.dataset.date === key;
+      cell.classList.toggle("is-selected",selected);
+      cell.setAttribute("aria-pressed",String(selected));
+      cell.tabIndex = selected ? 0 : -1;
+    });
+  }
+  const day = getCalendarDaySummary(key);
+  const label = dateFromKey(key).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"});
+  el.calendarDayDetail.innerHTML = `<div><strong>${label}</strong><p>${day.reviews
+    ? `${day.reviews} ответов · ${day.correct} верно · ${day.errors} ошибок<br>${formatStudyTime(day.seconds)} занятий · ${day.newCards} новых знаков`
+    : "Занятий в этот день нет. Наведите или нажмите на другой день календаря."}</p></div><span class="day-accuracy">${day.accuracy === null ? "—" : day.accuracy + "%"}</span>`;
+}
+
 function renderActivityCalendar(year){
   const start = new Date(year,0,1);
   const end = new Date(year + 1,0,1);
@@ -1893,20 +2003,30 @@ function renderActivityCalendar(year){
   const leadingBlanks = start.getDay();
   const totalCells = Math.ceil((leadingBlanks + daysInYear) / 7) * 7;
   const todayKey = localDateKey();
+  if(!selectedCalendarDay || Number(selectedCalendarDay.slice(0,4)) !== year){
+    const days = Object.keys(studyHistory).filter(key => Number(key.slice(0,4)) === year).sort();
+    selectedCalendarDay = year === new Date().getFullYear() ? todayKey : days.at(-1) || `${year}-01-01`;
+  }
   const fragment = document.createDocumentFragment();
   let yearReviews = 0;
   let yearActiveDays = 0;
 
   for(let index=0;index<totalCells;index++){
-    const cell = document.createElement("span");
-    cell.className = "activity-cell";
     const dayOffset = index - leadingBlanks;
+    const validDay = dayOffset >= 0 && dayOffset < daysInYear;
+    const cell = document.createElement(validDay ? "button" : "span");
+    cell.className = "activity-cell";
     if(dayOffset < 0 || dayOffset >= daysInYear){
       cell.classList.add("is-empty");
       cell.setAttribute("aria-hidden","true");
     } else {
       const date = new Date(year,0,dayOffset + 1);
       const key = localDateKey(date);
+      cell.type = "button";
+      cell.dataset.date = key;
+      cell.tabIndex = key === selectedCalendarDay ? 0 : -1;
+      cell.classList.toggle("is-selected",key === selectedCalendarDay);
+      cell.setAttribute("aria-pressed",String(key === selectedCalendarDay));
       const data = studyHistory[key] || { reviews:0,correct:0,seconds:0 };
       const level = getActivityLevel(data.reviews || 0);
       cell.classList.add(`level-${level}`);
@@ -1915,6 +2035,10 @@ function renderActivityCalendar(year){
       cell.title = data.reviews
         ? `${date.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})}: ${data.reviews} ответов, ${accuracy}% верно, ${formatStudyTime(data.seconds || 0)}`
         : `${date.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})}: нет занятий`;
+      cell.setAttribute("aria-label",cell.title);
+      cell.addEventListener("pointerenter",() => showCalendarDay(key));
+      cell.addEventListener("focus",() => showCalendarDay(key));
+      cell.addEventListener("click",() => showCalendarDay(key,true));
       yearReviews += data.reviews || 0;
       if(data.reviews) yearActiveDays++;
     }
@@ -1927,7 +2051,26 @@ function renderActivityCalendar(year){
   el.statsCurrentYear.textContent = year;
   el.statsNextYear.disabled = year >= new Date().getFullYear();
   el.calendarRangeLabel.textContent = `${year}: ${yearReviews} ответов · ${yearActiveDays} дней с занятиями`;
+  showCalendarDay(selectedCalendarDay);
 }
+
+el.activityCalendar.addEventListener("pointerleave",() => showCalendarDay(selectedCalendarDay));
+el.activityCalendar.addEventListener("focusout",event => {
+  if(!el.activityCalendar.contains(event.relatedTarget)) showCalendarDay(selectedCalendarDay);
+});
+el.activityCalendar.addEventListener("keydown",event => {
+  const cells = [...el.activityCalendar.querySelectorAll("button.activity-cell")];
+  const current = cells.indexOf(event.target);
+  if(current < 0) return;
+  const delta = {ArrowLeft:-7,ArrowRight:7,ArrowUp:-1,ArrowDown:1}[event.key];
+  let next = delta === undefined ? current : Math.max(0,Math.min(cells.length - 1,current + delta));
+  if(event.key === "Home") next = 0;
+  else if(event.key === "End") next = cells.length - 1;
+  else if(delta === undefined) return;
+  event.preventDefault();
+  cells.forEach((cell,index) => {cell.tabIndex = index === next ? 0 : -1});
+  cells[next].focus();
+});
 
 function renderReviewForecast(){
   const today = new Date();
@@ -1973,6 +2116,115 @@ function getDeckSummary(deck){
   return {deck,cards,learned,answers,correct,accuracy,due,learning,mastered,weak};
 }
 
+function getDeckExplorerEntries(deck,filter = "all",query = "",sort = "weak"){
+  const search = query.trim().toLocaleLowerCase();
+  const entries = ALL_CARDS_SOURCE.filter(card => card.deck === deck).map((card,index) => {
+    const p = getCardProgress(card.id);
+    return {card,p,index,errors:p.seenTotal - p.correctTotal,
+      accuracy:p.seenTotal ? p.correctTotal / p.seenTotal : null,
+      category:p.seenTotal ? getProgressCategory(p) : "new"};
+  }).filter(item => {
+    const matchesFilter = filter === "all" || (filter === "errors" ? item.errors > 0
+      : filter === "correct" ? item.p.correctTotal > 0 : item.category === filter);
+    return matchesFilter && (!search || item.card.kana.includes(search)
+      || item.card.romaji.some(value => value.toLocaleLowerCase().includes(search)));
+  });
+  entries.sort((a,b) => {
+    if(sort === "kana") return a.index - b.index;
+    if(sort === "errors") return b.errors - a.errors || a.index - b.index;
+    if(sort === "answers") return b.p.seenTotal - a.p.seenTotal || a.index - b.index;
+    return (a.accuracy ?? 2) - (b.accuracy ?? 2) || b.errors - a.errors || a.index - b.index;
+  });
+  return entries;
+}
+
+function showDeckExplorerCard(cardId){
+  const card = ALL_CARDS_SOURCE.find(item => item.id === cardId && item.deck === deckExplorer.deck);
+  if(!card) return;
+  deckExplorer.cardId = cardId;
+  el.deckStatsList.querySelectorAll(".explorer-card").forEach(button => {
+    button.setAttribute("aria-pressed",String(button.dataset.cardId === cardId));
+  });
+  el.deckStatsCardDetail.hidden = false;
+  el.deckStatsCardDetail.innerHTML = `${cardDetailMarkup(card)}<button class="explorer-speak" type="button" aria-label="Произнести ${escapeHtml(card.kana)}">♪</button>`;
+  el.deckStatsCardDetail.querySelector("button").addEventListener("click",() => speakKana(card.kana,true));
+}
+
+function renderDeckExplorer(){
+  const summary = getDeckSummary(deckExplorer.deck);
+  const label = deckExplorer.deck === "hiragana" ? "Хирагана" : "Катакана";
+  el.deckStatsTitle.textContent = `${label} · подробно`;
+  el.deckStatsSubtitle.textContent = `${summary.cards.length} знаков · ${summary.answers} ответов за всё время · нажмите на знак для расписания и озвучки`;
+  const metrics = [[summary.accuracy === null ? "—" : summary.accuracy + "%","Точность"],
+    [summary.correct,"Верных ответов"],[summary.answers - summary.correct,"Ошибок"],
+    [`${summary.learned.length}/${summary.cards.length}`,"Изучено знаков"]];
+  el.deckStatsMetrics.innerHTML = metrics.map(([value,title]) => `<div class="explorer-metric"><strong>${value}</strong><span>${title}</span></div>`).join("");
+  if(!el.deckStatsFilters.children.length){
+    DECK_STATS_FILTERS.forEach(([filter,title]) => {
+      const button = document.createElement("button");
+      button.type = "button";button.className = "explorer-filter";button.dataset.filter = filter;
+      button.addEventListener("click",() => {deckExplorer.filter = filter;deckExplorer.cardId = null;renderDeckExplorer()});
+      el.deckStatsFilters.appendChild(button);
+    });
+  }
+  el.deckStatsFilters.querySelectorAll("button").forEach(button => {
+    const filter = button.dataset.filter;
+    const title = DECK_STATS_FILTERS.find(item => item[0] === filter)[1];
+    button.textContent = `${title} · ${getDeckExplorerEntries(deckExplorer.deck,filter).length}`;
+    button.setAttribute("aria-pressed",String(filter === deckExplorer.filter));
+  });
+  const entries = getDeckExplorerEntries(deckExplorer.deck,deckExplorer.filter,deckExplorer.query,deckExplorer.sort);
+  el.deckStatsCount.textContent = `Показано ${entries.length} из ${summary.cards.length} знаков`;
+  el.deckStatsList.innerHTML = "";
+  const categories = {new:"Новый",due:"К повторению",learning:"Изучается",mastered:"Освоен"};
+  entries.forEach(({card,p,errors,accuracy,category}) => {
+    const button = document.createElement("button");
+    button.type = "button";button.className = "explorer-card" + (errors ? " has-errors" : "");
+    button.dataset.cardId = card.id;
+    button.setAttribute("aria-pressed",String(card.id === deckExplorer.cardId));
+    button.innerHTML = `<span class="explorer-glyph">${escapeHtml(card.kana)}</span><span class="explorer-card-copy"><strong>${escapeHtml(card.romaji[0])}</strong><small>${categories[category]}<br>${p.seenTotal} ответов · ${errors} ошибок</small></span><span class="explorer-accuracy">${accuracy === null ? "—" : Math.round(accuracy * 100) + "%"}</span>`;
+    button.addEventListener("click",() => showDeckExplorerCard(card.id));
+    el.deckStatsList.appendChild(button);
+  });
+  if(!entries.length){
+    const note = document.createElement("p");note.className = "explorer-empty";
+    note.textContent = deckExplorer.query ? "Ничего не найдено. Попробуйте другой знак или ромадзи." : "В этой группе пока нет знаков.";
+    el.deckStatsList.appendChild(note);
+  }
+  if(deckExplorer.cardId && entries.some(item => item.card.id === deckExplorer.cardId)) showDeckExplorerCard(deckExplorer.cardId);
+  else {deckExplorer.cardId = null;el.deckStatsCardDetail.hidden = true}
+}
+
+function getRingFilter(clientX,clientY,bounds,accuracy){
+  if(accuracy === null) return "all";
+  const dx = clientX - bounds.left - bounds.width / 2;
+  const dy = clientY - bounds.top - bounds.height / 2;
+  const radius = Math.hypot(dx,dy) / Math.min(bounds.width,bounds.height);
+  if(radius < .30 || radius > .53) return "all";
+  const fraction = ((Math.atan2(dy,dx) + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+  return fraction < accuracy / 100 ? "correct" : "errors";
+}
+
+function openDeckExplorer(deck,filter = "all",cardId = null){
+  Object.assign(deckExplorer,{deck,filter,query:"",sort:"weak",cardId});
+  el.deckStatsSearch.value = "";el.deckStatsSort.value = "weak";
+  renderDeckExplorer();
+  if(!el.deckStatsDialog.open) el.deckStatsDialog.showModal();
+  el.deckStatsList.scrollTop = 0;
+}
+
+el.closeDeckStats.addEventListener("click",() => el.deckStatsDialog.close());
+el.deckStatsDialog.addEventListener("keydown",event => {
+  if(event.key === "Escape"){event.preventDefault();el.deckStatsDialog.close()}
+});
+el.deckStatsDialog.addEventListener("click",event => {
+  if(event.target !== el.deckStatsDialog) return;
+  const bounds = el.deckStatsDialog.getBoundingClientRect();
+  if(event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) el.deckStatsDialog.close();
+});
+el.deckStatsSearch.addEventListener("input",() => {deckExplorer.query = el.deckStatsSearch.value;renderDeckExplorer()});
+el.deckStatsSort.addEventListener("change",() => {deckExplorer.sort = el.deckStatsSort.value;renderDeckExplorer()});
+
 function showChartDetail(selection){
   el.chartDetail.style.display = "block";
   if(!selection){
@@ -2003,13 +2255,29 @@ function renderDeckComparison(){
       section = document.createElement("div");
       section.className = "deck-chart";
       section.id = `deck-chart-${deck}`;
-      section.innerHTML = `<h3>${label}</h3><button class="donut-button" type="button"><svg class="donut-svg" viewBox="0 0 120 120" aria-hidden="true"><circle class="donut-track" cx="60" cy="60" r="48"/><circle class="donut-wrong" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/><circle class="donut-correct" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/></svg><span class="donut-center"><strong>—</strong><small>точность</small></span></button><p class="deck-summary"></p><div class="deck-breakdown"></div><div class="weak-signs" aria-label="Трудные знаки"></div>`;
+      section.innerHTML = `<h3>${label}</h3><button class="donut-button" type="button" aria-haspopup="dialog" aria-controls="deckStatsDialog"><svg class="donut-svg" viewBox="0 0 120 120" aria-hidden="true"><circle class="donut-track" cx="60" cy="60" r="48"/><circle class="donut-wrong" data-ring-filter="errors" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/><circle class="donut-correct" data-ring-filter="correct" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/></svg><span class="donut-center"><strong>—</strong><small>подробнее ↗</small></span></button><p class="ring-open-hint">Нажмите на кольцо или сектор</p><p class="deck-summary"></p><div class="deck-breakdown"></div><div class="weak-signs" aria-label="Трудные знаки"></div>`;
       const button = section.querySelector(".donut-button");
+      let pointerFilter = null;
+      button.addEventListener("pointerdown",event => {
+        pointerFilter = event.target.dataset.ringFilter
+          || getRingFilter(event.clientX,event.clientY,button.getBoundingClientRect(),getDeckSummary(deck).accuracy);
+      });
+      button.addEventListener("pointercancel",() => {pointerFilter = null});
       button.addEventListener("pointerenter", () => showChartDetail({deck}));
       button.addEventListener("pointerleave", () => showChartDetail(chartSelection));
       button.addEventListener("focus", () => showChartDetail({deck}));
       button.addEventListener("blur", () => showChartDetail(chartSelection));
-      button.addEventListener("click", () => {chartSelection = {deck};showChartDetail(chartSelection)});
+      button.addEventListener("click", event => {
+        chartSelection = {deck};showChartDetail(chartSelection);
+        const filter = event.detail === 0 ? "all" : pointerFilter || event.target.dataset.ringFilter
+          || getRingFilter(event.clientX,event.clientY,button.getBoundingClientRect(),getDeckSummary(deck).accuracy);
+        pointerFilter = null;
+        openDeckExplorer(deck,filter);
+      });
+      section.querySelector(".deck-breakdown").addEventListener("click",event => {
+        const target = event.target.closest("button[data-filter]");
+        if(target) openDeckExplorer(deck,target.dataset.filter);
+      });
       el.deckComparison.appendChild(section);
     }
     section.querySelector(".donut-correct").setAttribute("stroke-dasharray",`${summary.accuracy || 0} 100`);
@@ -2017,7 +2285,7 @@ function renderDeckComparison(){
     section.querySelector(".donut-center strong").textContent = summary.accuracy === null ? "—" : `${summary.accuracy}%`;
     section.querySelector(".donut-button").setAttribute("aria-label",`${label}: ${summary.accuracy === null ? "нет ответов" : "точность " + summary.accuracy + "%"}. Показать подробности.`);
     section.querySelector(".deck-summary").textContent = `Изучено ${summary.learned.length} из ${summary.cards.length} знаков`;
-    section.querySelector(".deck-breakdown").innerHTML = `<span><i aria-hidden="true"></i>${summary.correct} верно</span><span class="wrong"><i aria-hidden="true"></i>${summary.answers - summary.correct} ошибок</span>`;
+    section.querySelector(".deck-breakdown").innerHTML = `<button type="button" data-filter="correct" aria-haspopup="dialog"><i aria-hidden="true"></i>${summary.correct} верно</button><button type="button" class="wrong" data-filter="errors" aria-haspopup="dialog"><i aria-hidden="true"></i>${summary.answers - summary.correct} ошибок</button>`;
     const weakContainer = section.querySelector(".weak-signs");
     weakContainer.innerHTML = "";
     summary.weak.forEach(({card,p}) => {
@@ -2028,7 +2296,7 @@ function renderDeckComparison(){
       button.addEventListener("pointerleave", () => showChartDetail(chartSelection));
       button.addEventListener("focus", () => showChartDetail({cardId:card.id}));
       button.addEventListener("blur", () => showChartDetail(chartSelection));
-      button.addEventListener("click", () => {chartSelection = {cardId:card.id};showChartDetail(chartSelection);speakKana(card.kana,true)});
+      button.addEventListener("click", () => {chartSelection = {cardId:card.id};showChartDetail(chartSelection);openDeckExplorer(deck,"errors",card.id)});
       weakContainer.appendChild(button);
     });
     if(!summary.weak.length){
@@ -2848,6 +3116,7 @@ window.addEventListener("focus", () => {
 ====================================================================== */
 
 document.addEventListener("keydown", (e) => {
+  if(el.deckStatsDialog.open) return;
   if(state.currentMode !== "choice") return;
   if(state.awaitingNext) return;
   const idx = parseInt(e.key, 10);
