@@ -10,6 +10,7 @@
       const saved = JSON.parse(localStorage.getItem("kanaTrainerSettingsV1") || "null");
       const systemTheme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       document.documentElement.dataset.theme = saved?.theme === "dark" || saved?.theme === "light" ? saved.theme : systemTheme;
+      document.documentElement.dataset.motion = saved?.motionEnabled === false ? "off" : "on";
     } catch(_error) {
       document.documentElement.dataset.theme = "light";
     }
@@ -722,6 +723,57 @@
   .memory-summary-item span{display:block;margin-top:3px;font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
   .history-note{font-size:11px;color:var(--ink-soft);margin:0;text-align:center}
 
+  /* Живая карта, сравнение наборов и резервные копии */
+  .ambient-kana{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+  .ambient-kana span{position:absolute;top:var(--top);left:var(--left);font:500 var(--size,52px) var(--serif);color:var(--moss);opacity:.09;animation:kanaDrift var(--duration,24s) ease-in-out var(--delay,0s) infinite alternate;will-change:transform}
+  .ambient-kana span:nth-child(even){color:var(--seal)}
+  @keyframes kanaDrift{from{transform:translate3d(-14px,26px,0) rotate(-13deg)}to{transform:translate3d(26px,-36px,0) rotate(16deg)}}
+  html[data-motion="off"] .ambient-kana{display:none}
+  html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .panel,.progress-panel,.stats-detail-card{transition:box-shadow .25s ease,border-color .25s ease}
+  .stats-detail-card:hover{border-color:var(--line-strong);box-shadow:0 10px 30px rgba(0,0,0,.06)}
+  .chip:hover{transform:translateY(-2px)}
+  .heat-cell{transition:transform .2s ease,box-shadow .2s ease,background .35s ease,color .35s ease,opacity .2s ease}
+  .heat-cell.is-inspected{outline:2px solid var(--seal);outline-offset:2px;transform:translateY(-2px)}
+  .knowledge-detail{margin-top:16px;min-height:98px;padding:14px 16px;display:flex;align-items:center;gap:16px;background:var(--paper-soft);border-radius:12px}
+  .knowledge-detail .detail-glyph{flex:0 0 auto;font:600 38px var(--serif);color:var(--ink);min-width:56px;text-align:center}
+  .detail-copy{min-width:0;flex:1}
+  .detail-copy strong{font-size:14px}.detail-copy p{margin:5px 0 0;color:var(--ink-soft);font-size:12px;line-height:1.6}
+  .detail-placeholder{color:var(--ink-soft);font-size:12px;line-height:1.6}
+  .detail-chip{font:500 11px var(--sans);color:var(--ink-soft);margin-left:8px}
+  .progress-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .transfer-status{font-size:12px;color:var(--moss);margin:12px 0 0;min-height:18px}
+  .transfer-status.is-error{color:var(--seal)}
+  .deck-comparison{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .deck-chart{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0;padding:6px 0}
+  .deck-chart h3{font:600 16px var(--serif);margin:0 0 10px}
+  .donut-button{display:block;position:relative;width:160px;height:160px;appearance:none;background:none;border:0;padding:0;cursor:pointer;border-radius:50%;color:var(--ink);transition:transform .25s ease}
+  .donut-button:hover{transform:scale(1.045)}
+  .donut-svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+  .donut-track{fill:none;stroke:var(--paper-soft);stroke-width:12}
+  .donut-correct,.donut-wrong{fill:none;stroke-width:12;transition:stroke-dasharray .65s ease,stroke-dashoffset .65s ease}
+  .donut-correct{stroke:var(--moss)}.donut-wrong{stroke:var(--seal)}
+  .donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
+  .donut-center strong{font:700 29px var(--serif)}.donut-center small{font-size:11px;color:var(--ink-soft);margin-top:2px}
+  .deck-summary{font-size:12px;line-height:1.7;color:var(--ink-soft);margin:10px 0}
+  .deck-breakdown{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;font-size:11px;color:var(--ink-soft)}
+  .deck-breakdown span{display:inline-flex;gap:5px;align-items:center}
+  .deck-breakdown i{width:7px;height:7px;border-radius:50%;background:var(--moss)}
+  .deck-breakdown .wrong i{background:var(--seal)}
+  .weak-signs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;min-height:38px}
+  .weak-sign{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:9px;min-width:38px;padding:4px 8px;font:500 19px var(--serif);cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+  .weak-sign:hover{transform:translateY(-3px);border-color:var(--seal)}
+  .chart-detail{margin-top:18px;padding:12px 14px;border-radius:12px;background:var(--paper-soft);font-size:12px;line-height:1.7;color:var(--ink-soft);min-height:66px}
+  .chart-detail strong{color:var(--ink)}
+  .deck-verdict{margin:14px 0 0;font-size:13px;color:var(--ink);line-height:1.6}
+  .comparison-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0 0;font-size:11px;color:var(--ink-soft)}
+  .comparison-legend span{display:flex;align-items:center;gap:6px}.comparison-legend i{width:8px;height:8px;border-radius:50%;background:var(--moss)}
+  .comparison-legend .wrong i{background:var(--seal)}
+  @media(max-width:1320px){.ambient-kana{display:none}}
+  @media(max-width:640px){.knowledge-detail{gap:10px;padding:12px;align-items:flex-start}.knowledge-detail .detail-glyph{font-size:29px;min-width:36px}.detail-chip{display:block;margin:3px 0 0}.deck-comparison{gap:12px}.donut-button{width:130px;height:130px}.donut-center strong{font-size:24px}.progress-actions{gap:12px}.chart-detail{margin-top:14px}}
+  @media(max-width:380px){.donut-button{width:112px;height:112px}.deck-chart h3{font-size:14px}.deck-summary{font-size:11px}}
+  @media(prefers-reduced-motion:reduce){.ambient-kana{display:none}.heat-cell,.donut-button,.weak-sign,.donut-correct,.donut-wrong{transition:none}}
+
   @media (max-width:640px){
     .top-actions{gap:7px}.sound-toggle,.theme-toggle{width:48px;padding:0;justify-content:center}.sound-toggle .sound-label,.theme-toggle .theme-label{display:none}
     .progress-head{align-items:flex-start;flex-direction:column}.kana-heatmap{grid-template-columns:repeat(8,1fr)}
@@ -737,6 +789,14 @@
 <body>
 
 <div class="paper-noise" aria-hidden="true"></div>
+<div class="ambient-kana" aria-hidden="true">
+  <span style="--left:3%;--top:15%;--duration:23s;--delay:-5s">あ</span>
+  <span style="--left:92%;--top:12%;--duration:29s;--delay:-11s">ア</span>
+  <span style="--left:7%;--top:47%;--duration:26s;--delay:-14s;--size:65px">き</span>
+  <span style="--left:88%;--top:43%;--duration:21s;--delay:-7s">カ</span>
+  <span style="--left:2%;--top:78%;--duration:31s;--delay:-17s">ゆ</span>
+  <span style="--left:94%;--top:76%;--duration:25s;--delay:-4s;--size:60px">ネ</span>
+</div>
 
 <div class="frame">
 
@@ -818,13 +878,16 @@
     <div class="progress-head">
       <div>
         <h2 id="progressTitle">Карта знаний</h2>
-        <p>Нажмите на знак для произношения или наведите на статистику, чтобы отфильтровать карту</p>
+        <p>Наведите на знак, чтобы увидеть прогресс. Нажмите, чтобы закрепить его и услышать чтение.</p>
       </div>
       <div class="progress-legend" aria-label="Шкала прогресса: от ошибок к уверенным ответам">
         <span>ошибки</span><span class="legend-gradient" aria-hidden="true"></span><span>уверенно</span>
       </div>
     </div>
     <div class="kana-heatmap" id="kanaHeatmap"></div>
+    <div class="knowledge-detail" id="knowledgeDetail" aria-label="Подробности выбранного знака">
+      <span class="detail-placeholder">Выберите знак на карте — здесь появятся точность, ошибки и время следующего повторения.</span>
+    </div>
   </section>
 
   <main class="card-wrap" id="cardWrap">
@@ -853,10 +916,15 @@
 
   <div class="toolbar">
     <button class="link" id="btnHelp" type="button">Как это работает?</button>
-    <div>
+    <div class="progress-actions">
+      <button class="link" id="btnExport" type="button">Сохранить прогресс</button>
+      <button class="link" id="btnImport" type="button">Загрузить прогресс</button>
       <button class="link" id="btnReset" type="button">Сбросить прогресс</button>
+      <button class="link" id="btnMotion" type="button" aria-pressed="true">Анимации: вкл.</button>
     </div>
   </div>
+  <input type="file" id="progressFile" accept=".json,application/json" hidden>
+  <p class="transfer-status" id="transferStatus" role="status" aria-live="polite"></p>
 
   <footer class="note">
     Прогресс сохраняется в этом браузере (<b>localStorage</b>) — закрытие вкладки его не сотрёт.<br>
@@ -891,6 +959,15 @@
         <div class="anki-metric"><span class="value" id="metricCurrentStreak">0</span><span class="label">Текущая серия, дней</span></div>
         <div class="anki-metric"><span class="value" id="metricTotalAccuracy">—</span><span class="label">Общая точность</span></div>
       </div>
+    </section>
+
+    <section class="stats-detail-card" aria-labelledby="deckComparisonTitle">
+      <h2 id="deckComparisonTitle">Хирагана и катакана</h2>
+      <p>Кольцо показывает долю верных ответов. Нажмите на диаграмму или трудный знак для подробностей. Учитываются все знаки, включая дакутэн и ёон.</p>
+      <div class="deck-comparison" id="deckComparison"></div>
+      <div class="comparison-legend"><span><i aria-hidden="true"></i>Верные ответы</span><span class="wrong"><i aria-hidden="true"></i>Ошибки</span></div>
+      <p class="deck-verdict" id="deckVerdict"></p>
+      <div class="chart-detail" id="chartDetail" aria-live="polite">Выберите набор или знак для подробностей.</div>
     </section>
 
     <div class="stats-details">
@@ -934,6 +1011,8 @@
     <p>Серия (печать в правом верхнем углу) — это число подряд правильных ответов. Она сбрасывается при любой ошибке, но не влияет на сохранённый прогресс по карточкам.</p>
     <p>После ответа звучит короткий сигнал: восходящий — при верном ответе, понижающийся — при ошибке. Затем произносится знак, и небольшая «рулетка» автоматически переключает карточку.</p>
     <p>Карта знаний начинается серой. Ошибки уводят знак к красному, а верные ответы — к зелёному. Нажмите на любой знак карты или на кнопку ♪ в карточке, чтобы услышать японское произношение. Наведение на блоки статистики временно подсвечивает соответствующие знаки.</p>
+    <p>При наведении на знак карта показывает точность, ошибки и расписание повторения. Нажатие закрепляет подробности. Во вкладке «Статистика» круговые диаграммы сравнивают точность хираганы и катаканы, а под ними показаны трудные знаки.</p>
+    <p>«Сохранить прогресс» скачивает резервную копию в формате JSON. «Загрузить прогресс» восстанавливает её в другом браузере вместе с расписанием, историей и настройками. Перед загрузкой можно сохранить текущие данные. Кнопка «Анимации» отключает декоративное движение и переходы.</p>
     <div class="close-row"><button class="btn secondary" id="closeHelp" type="button">Понятно</button></div>
   </div>
 </div>
@@ -1187,6 +1266,7 @@ const state = {
   includeDakuten: false,
   includeYoon: false,
   soundEnabled: true,
+  motionEnabled: true,
   theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   pool: [],                   // активный список карточек (объекты из ALL_CARDS_SOURCE)
   dueReturns: {},              // id -> sessionSeen-момент, когда карточка "созрела" для возврата после ошибки
@@ -1209,6 +1289,8 @@ let selectedStatsYear = new Date().getFullYear();
 let viewSwitching = false;
 let themeTransitionTimer = 0;
 let reviewWakeTimer = 0;
+let inspectedCardId = null;
+let chartSelection = null;
 
 /* ======================================================================
    4. ПОСТРОЕНИЕ ПУЛА КАРТОЧЕК ПО ФИЛЬТРАМ
@@ -1475,6 +1557,15 @@ const el = {
   statMastered: document.getElementById("statMastered"),
   statAccuracy: document.getElementById("statAccuracy"),
   kanaHeatmap: document.getElementById("kanaHeatmap"),
+  knowledgeDetail: document.getElementById("knowledgeDetail"),
+  deckComparison: document.getElementById("deckComparison"),
+  deckVerdict: document.getElementById("deckVerdict"),
+  chartDetail: document.getElementById("chartDetail"),
+  btnExport: document.getElementById("btnExport"),
+  btnImport: document.getElementById("btnImport"),
+  btnMotion: document.getElementById("btnMotion"),
+  progressFile: document.getElementById("progressFile"),
+  transferStatus: document.getElementById("transferStatus"),
   themeToggle: document.getElementById("themeToggle"),
   themeIcon: document.getElementById("themeIcon"),
   themeLabel: document.getElementById("themeLabel"),
@@ -1673,6 +1764,28 @@ function getProgressCategory(p){
   return "learning";
 }
 
+function cardDetailMarkup(card){
+  const p = getCardProgress(card.id);
+  const accuracy = p.seenTotal ? Math.round(p.correctTotal / p.seenTotal * 100) + "%" : "ещё нет ответов";
+  const status = !p.seenTotal ? "Новый знак" : {due:"К повторению",learning:"Изучается",mastered:"Освоен"}[getProgressCategory(p)];
+  return `<span class="detail-glyph">${escapeHtml(card.kana)}</span><div class="detail-copy"><strong>${escapeHtml(card.romaji.join(" / "))}</strong><span class="detail-chip">${card.deck === "hiragana" ? "Хирагана" : "Катакана"} · ${status}</span><p>Точность: ${accuracy} · Ответов: ${p.seenTotal} · Ошибок: ${p.seenTotal - p.correctTotal}<br>${escapeHtml(getMemoryScheduleLabel(p))}</p></div>`;
+}
+
+function showKnowledgeDetail(card, pin = false){
+  if(pin) inspectedCardId = card.id;
+  el.knowledgeDetail.innerHTML = cardDetailMarkup(card);
+  el.kanaHeatmap.querySelectorAll(".heat-cell").forEach(cell => {
+    cell.classList.toggle("is-inspected",cell.dataset.cardId === inspectedCardId);
+    cell.setAttribute("aria-pressed",cell.dataset.cardId === inspectedCardId ? "true" : "false");
+  });
+}
+
+function restoreKnowledgeDetail(){
+  const card = state.pool.find(item => item.id === inspectedCardId);
+  if(card) showKnowledgeDetail(card);
+  else el.knowledgeDetail.innerHTML = '<span class="detail-placeholder">Выберите знак на карте — здесь появятся точность, ошибки и время следующего повторения.</span>';
+}
+
 function renderHeatmap(){
   if(!el.kanaHeatmap) return;
   el.kanaHeatmap.innerHTML = "";
@@ -1689,16 +1802,23 @@ function renderHeatmap(){
     cell.textContent = card.kana;
     cell.style.background = tone.background;
     cell.style.color = tone.foreground;
+    cell.dataset.cardId = card.id;
+    cell.setAttribute("aria-pressed",card.id === inspectedCardId ? "true" : "false");
     cell.dataset.progressCategory = getProgressCategory(p);
     const memoryLabel = getMemoryScheduleLabel(p);
-    cell.title = `${card.kana} · ${card.romaji[0]} · ${tone.label} · ${memoryLabel}`;
     cell.setAttribute("aria-label", `${card.kana}, ${card.romaji[0]}, ${tone.label}, ${memoryLabel}. Произнести.`);
+    cell.addEventListener("pointerenter", () => showKnowledgeDetail(card));
+    cell.addEventListener("pointerleave", restoreKnowledgeDetail);
+    cell.addEventListener("focus", () => showKnowledgeDetail(card));
+    cell.addEventListener("blur", restoreKnowledgeDetail);
     cell.addEventListener("click", () => {
+      showKnowledgeDetail(card,true);
       if(!state.awaitingNext) speakKana(card.kana, true);
     });
     el.kanaHeatmap.appendChild(cell);
   });
   if(activeStatFilter) setHeatmapFilter(activeStatFilter);
+  restoreKnowledgeDetail();
 }
 
 function setHeatmapFilter(category){
@@ -1836,6 +1956,99 @@ function renderReviewForecast(){
   el.reviewForecast.setAttribute("aria-label",`Прогноз на семь дней: ${buckets.join(", ")} повторений по дням`);
 }
 
+function getDeckSummary(deck){
+  const cards = ALL_CARDS_SOURCE.filter(card => card.deck === deck);
+  const entries = cards.map(card => ({card,p:getCardProgress(card.id)}));
+  const learned = entries.filter(item => item.p.seenTotal > 0);
+  const answers = learned.reduce((sum,item) => sum + item.p.seenTotal,0);
+  const correct = learned.reduce((sum,item) => sum + item.p.correctTotal,0);
+  const accuracy = answers ? Math.round(correct / answers * 100) : null;
+  const due = learned.filter(item => getProgressCategory(item.p) === "due").length;
+  const mastered = learned.filter(item => getProgressCategory(item.p) === "mastered").length;
+  const weak = learned.filter(item => item.p.correctTotal < item.p.seenTotal)
+    .sort((a,b) => Number(b.p.lastResult === "wrong") - Number(a.p.lastResult === "wrong")
+      || a.p.correctTotal / a.p.seenTotal - b.p.correctTotal / b.p.seenTotal)
+    .slice(0,6);
+  const learning = learned.length - due - mastered;
+  return {deck,cards,learned,answers,correct,accuracy,due,learning,mastered,weak};
+}
+
+function showChartDetail(selection){
+  el.chartDetail.style.display = "block";
+  if(!selection){
+    el.chartDetail.textContent = "Выберите набор или знак для подробностей.";
+    return;
+  }
+  if(selection.cardId){
+    const card = ALL_CARDS_SOURCE.find(item => item.id === selection.cardId);
+    if(!card) return;
+    el.chartDetail.innerHTML = cardDetailMarkup(card);
+    el.chartDetail.style.display = "flex";
+    el.chartDetail.style.gap = "14px";
+    el.chartDetail.style.alignItems = "center";
+    return;
+  }
+  const summary = getDeckSummary(selection.deck);
+  const label = selection.deck === "hiragana" ? "Хирагана" : "Катакана";
+  el.chartDetail.innerHTML = `<strong>${label}</strong> · ${summary.correct} верных из ${summary.answers} ответов · ${summary.answers - summary.correct} ошибок.<br>Новых знаков: ${summary.cards.length - summary.learned.length} · К повторению: ${summary.due} · Изучается: ${summary.learning} · Освоено: ${summary.mastered}.`;
+}
+
+function renderDeckComparison(){
+  const summaries = [getDeckSummary("hiragana"),getDeckSummary("katakana")];
+  summaries.forEach(summary => {
+    const deck = summary.deck;
+    const label = deck === "hiragana" ? "Хирагана" : "Катакана";
+    let section = document.getElementById(`deck-chart-${deck}`);
+    if(!section){
+      section = document.createElement("div");
+      section.className = "deck-chart";
+      section.id = `deck-chart-${deck}`;
+      section.innerHTML = `<h3>${label}</h3><button class="donut-button" type="button"><svg class="donut-svg" viewBox="0 0 120 120" aria-hidden="true"><circle class="donut-track" cx="60" cy="60" r="48"/><circle class="donut-wrong" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/><circle class="donut-correct" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="0 100"/></svg><span class="donut-center"><strong>—</strong><small>точность</small></span></button><p class="deck-summary"></p><div class="deck-breakdown"></div><div class="weak-signs" aria-label="Трудные знаки"></div>`;
+      const button = section.querySelector(".donut-button");
+      button.addEventListener("pointerenter", () => showChartDetail({deck}));
+      button.addEventListener("pointerleave", () => showChartDetail(chartSelection));
+      button.addEventListener("focus", () => showChartDetail({deck}));
+      button.addEventListener("blur", () => showChartDetail(chartSelection));
+      button.addEventListener("click", () => {chartSelection = {deck};showChartDetail(chartSelection)});
+      el.deckComparison.appendChild(section);
+    }
+    section.querySelector(".donut-correct").setAttribute("stroke-dasharray",`${summary.accuracy || 0} 100`);
+    section.querySelector(".donut-wrong").setAttribute("stroke-dasharray",`${summary.answers ? 100 : 0} 100`);
+    section.querySelector(".donut-center strong").textContent = summary.accuracy === null ? "—" : `${summary.accuracy}%`;
+    section.querySelector(".donut-button").setAttribute("aria-label",`${label}: ${summary.accuracy === null ? "нет ответов" : "точность " + summary.accuracy + "%"}. Показать подробности.`);
+    section.querySelector(".deck-summary").textContent = `Изучено ${summary.learned.length} из ${summary.cards.length} знаков`;
+    section.querySelector(".deck-breakdown").innerHTML = `<span><i aria-hidden="true"></i>${summary.correct} верно</span><span class="wrong"><i aria-hidden="true"></i>${summary.answers - summary.correct} ошибок</span>`;
+    const weakContainer = section.querySelector(".weak-signs");
+    weakContainer.innerHTML = "";
+    summary.weak.forEach(({card,p}) => {
+      const button = document.createElement("button");
+      button.type = "button";button.className = "weak-sign";button.textContent = card.kana;
+      button.setAttribute("aria-label",`${card.kana}, ${card.romaji[0]}, точность ${Math.round(p.correctTotal / p.seenTotal * 100)}%. Показать подробности.`);
+      button.addEventListener("pointerenter", () => showChartDetail({cardId:card.id}));
+      button.addEventListener("pointerleave", () => showChartDetail(chartSelection));
+      button.addEventListener("focus", () => showChartDetail({cardId:card.id}));
+      button.addEventListener("blur", () => showChartDetail(chartSelection));
+      button.addEventListener("click", () => {chartSelection = {cardId:card.id};showChartDetail(chartSelection);speakKana(card.kana,true)});
+      weakContainer.appendChild(button);
+    });
+    if(!summary.weak.length){
+      const note = document.createElement("span");note.className = "detail-placeholder";
+      note.textContent = summary.answers ? "Пока без ошибок" : "Начните тренировку";
+      weakContainer.appendChild(note);
+    }
+  });
+  const [hira,kata] = summaries;
+  if(hira.accuracy === null || kata.accuracy === null){
+    el.deckVerdict.textContent = "Для сравнения потренируйте оба набора: точность появится после первых ответов.";
+  } else if(hira.accuracy === kata.accuracy){
+    el.deckVerdict.textContent = `Оба набора на одном уровне: ${hira.accuracy}% верных ответов.`;
+  } else {
+    const better = hira.accuracy > kata.accuracy ? "Хирагана" : "Катакана";
+    el.deckVerdict.textContent = `${better} получается лучше на ${Math.abs(hira.accuracy - kata.accuracy)} процентных пунктов. Трудные знаки показаны под диаграммами.`;
+  }
+  showChartDetail(chartSelection);
+}
+
 function renderStatisticsDashboard(){
   const todayData = studyHistory[localDateKey()] || { reviews:0,correct:0,seconds:0 };
   const secondsPerCard = todayData.reviews ? Math.round(todayData.seconds / todayData.reviews) : 0;
@@ -1873,6 +2086,7 @@ function renderStatisticsDashboard(){
 
   renderActivityCalendar(selectedStatsYear);
   renderReviewForecast();
+  renderDeckComparison();
 }
 
 function switchAppView(viewName){
@@ -1885,7 +2099,7 @@ function switchAppView(viewName){
   viewSwitching = true;
   el.trainerTab.setAttribute("aria-selected",showStatistics ? "false" : "true");
   el.statisticsTab.setAttribute("aria-selected",showStatistics ? "true" : "false");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = !state.motionEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const leaveDelay = reducedMotion ? 0 : 180;
   const enterDelay = reducedMotion ? 0 : 390;
 
@@ -2007,6 +2221,10 @@ function cancelActiveFeedback(){
 
 async function runRoulette(sequenceId){
   if(sequenceId !== feedbackSequenceId) return;
+  if(!state.motionEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    startQuestion();
+    return;
+  }
   el.cardWrap.classList.add("is-roulette");
   el.feedbackStrip.innerHTML = '<span class="hint">следующий знак…</span>';
 
@@ -2049,6 +2267,12 @@ function updateSoundControl(){
   el.soundToggle.setAttribute("aria-pressed", state.soundEnabled ? "true" : "false");
   el.soundToggle.querySelector(".sound-label").textContent = state.soundEnabled ? "Звук и речь" : "Без звука";
   el.soundToggle.title = state.soundEnabled ? "Сигнал и произношение после ответа включены" : "Сигнал и произношение после ответа выключены";
+}
+
+function updateMotionControl(){
+  document.documentElement.dataset.motion = state.motionEnabled ? "on" : "off";
+  el.btnMotion.setAttribute("aria-pressed",state.motionEnabled ? "true" : "false");
+  el.btnMotion.textContent = state.motionEnabled ? "Анимации: вкл." : "Анимации: выкл.";
 }
 
 function applyTheme(theme, animate = false){
@@ -2365,6 +2589,7 @@ function persistSettings(){
     includeDakuten: state.includeDakuten,
     includeYoon: state.includeYoon,
     soundEnabled: state.soundEnabled,
+    motionEnabled: state.motionEnabled,
     theme: state.theme,
   });
 }
@@ -2377,6 +2602,7 @@ function applySavedSettings(){
   state.includeDakuten = !!saved.includeDakuten;
   state.includeYoon = !!saved.includeYoon;
   state.soundEnabled = saved.soundEnabled !== false;
+  state.motionEnabled = saved.motionEnabled !== false;
   state.theme = saved.theme === "dark" || saved.theme === "light" ? saved.theme : state.theme;
 
   setActiveChip(el.deckChips, "deck", state.deckFilter);
@@ -2437,6 +2663,155 @@ el.statsCurrentYear.addEventListener("click", () => {
   renderStatisticsDashboard();
 });
 
+function setTransferStatus(message,isError = false){
+  el.transferStatus.textContent = message;
+  el.transferStatus.classList.toggle("is-error",isError);
+}
+
+function exportProgress(){
+  persistSettings();
+  const backup = {
+    app:"kana-trainer",version:1,exportedAt:new Date().toISOString(),
+    progress,history:studyHistory,settings:loadSettings()
+  };
+  const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;link.download = `kana-progress-${localDateKey()}.json`;
+  document.body.appendChild(link);link.click();link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url),1000);
+  setTransferStatus("Резервная копия сохранена: ответы, расписание повторений и история занятий.");
+}
+
+function validateProgressBackup(data){
+  const isRecord = value => value !== null && typeof value === "object" && !Array.isArray(value);
+  if(!isRecord(data)) throw new Error("Ожидается JSON-файл с прогрессом Kana.");
+  const wrapped = Object.prototype.hasOwnProperty.call(data,"progress");
+  if(wrapped && (data.app !== "kana-trainer" || data.version !== 1)){
+    throw new Error("Формат резервной копии не поддерживается.");
+  }
+  const sourceProgress = wrapped ? data.progress : data;
+  if(!isRecord(sourceProgress)) throw new Error("В файле нет корректного прогресса.");
+  const knownIds = new Set(ALL_CARDS_SOURCE.map(card => card.id));
+  const cleanProgress = {};
+  const number = (value,field,max = 1e9) => {
+    if(!Number.isFinite(value) || value < 0 || value > max){
+      throw new Error(`Некорректное значение «${field}» в резервной копии.`);
+    }
+    return value;
+  };
+  Object.entries(sourceProgress).forEach(([id,p]) => {
+    if(!knownIds.has(id)) return;
+    if(!isRecord(p)) throw new Error("Повреждены данные одной из карточек.");
+    const seenTotal = number(p.seenTotal,"число ответов");
+    const correctTotal = number(p.correctTotal,"верные ответы");
+    if(!Number.isInteger(seenTotal) || !Number.isInteger(correctTotal) || correctTotal > seenTotal){
+      throw new Error("Количество верных ответов не соответствует числу ответов.");
+    }
+    const clean = {
+      seenTotal,correctTotal,
+      stage:Math.min(6,Math.floor(number(p.stage ?? 0,"этап"))),
+      lapses:Math.floor(number(p.lapses ?? 0,"ошибки")),
+      dueBoost:Math.min(MAX_DUE_BOOST,number(p.dueBoost ?? 0,"приоритет")),
+      lastResult:p.lastResult === "correct" || p.lastResult === "wrong" ? p.lastResult : null
+    };
+    if(p.stabilityMs != null) clean.stabilityMs = number(p.stabilityMs,"устойчивость памяти",MAX_INTERVAL_MS / DECAY_TO_TARGET * 1.01);
+    ["lastReviewedAt","nextReviewAt"].forEach(field => {
+      if(p[field] != null) clean[field] = number(p[field],"время повторения",Date.UTC(2200,0,1));
+    });
+    cleanProgress[id] = clean;
+  });
+  if(Object.keys(sourceProgress).length && !Object.keys(cleanProgress).length){
+    throw new Error("В файле не найдены знакомые карточки Kana.");
+  }
+  const cleanHistory = {};
+  if(wrapped && data.history != null){
+    if(!isRecord(data.history)) throw new Error("Повреждена история занятий.");
+    Object.entries(data.history).forEach(([key,day]) => {
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(key) || !isRecord(day)) throw new Error("Некорректная дата в истории занятий.");
+      const [year,month,date] = key.split("-").map(Number);
+      const actual = new Date(year,month - 1,date);
+      if(year < 2000 || year > 2200 || actual.getFullYear() !== year || actual.getMonth() !== month - 1 || actual.getDate() !== date){
+        throw new Error("Некорректная дата в истории занятий.");
+      }
+      const reviews = number(day.reviews,"ответы за день");
+      const correct = number(day.correct ?? 0,"верные ответы за день");
+      const newCards = number(day.newCards ?? 0,"новые карточки");
+      if(![reviews,correct,newCards].every(Number.isInteger) || correct > reviews || newCards > reviews){
+        throw new Error("Некорректное число ответов в истории занятий.");
+      }
+      cleanHistory[key] = {reviews,correct,newCards,seconds:number(day.seconds ?? 0,"время занятий")};
+    });
+  }
+  let cleanSettings = null;
+  if(wrapped && isRecord(data.settings)){
+    cleanSettings = {
+      deckFilter:["hiragana","katakana","both"].includes(data.settings.deckFilter) ? data.settings.deckFilter : state.deckFilter,
+      answerMode:["type","choice","mixed"].includes(data.settings.answerMode) ? data.settings.answerMode : state.answerMode,
+      includeDakuten:data.settings.includeDakuten === true,
+      includeYoon:data.settings.includeYoon === true,
+      soundEnabled:data.settings.soundEnabled !== false,
+      motionEnabled:data.settings.motionEnabled !== false,
+      theme:data.settings.theme === "dark" || data.settings.theme === "light" ? data.settings.theme : state.theme
+    };
+  }
+  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings};
+}
+
+function resetSessionState(){
+  lastStudyInteractionAt = Date.now();
+  state.streak = 0;state.sessionSeen = 0;state.sessionCorrect = 0;
+  state.sessionMistakes = {};state._pendingReturns = [];state.dueReturns = {};
+  state.sessionSeenMap = {};state.recentHistory = [];
+  inspectedCardId = null;chartSelection = null;
+}
+
+async function importProgress(file){
+  if(!file) return;
+  try{
+    if(file.size > 5 * 1024 * 1024) throw new Error("Файл слишком большой. Максимум — 5 МБ.");
+    const imported = validateProgressBackup(JSON.parse(await file.text()));
+    const learned = Object.values(imported.progress).filter(p => p.seenTotal > 0).length;
+    const totalAnswers = Object.values(imported.progress).reduce((sum,p) => sum + p.seenTotal,0);
+    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс и история будут заменены. Для резервной копии используйте «Сохранить прогресс».`)){
+      setTransferStatus("Загрузка отменена.");return;
+    }
+    const keys = [STORAGE_KEY,HISTORY_KEY,SETTINGS_KEY];
+    const previous = keys.map(key => localStorage.getItem(key));
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(imported.progress));
+      localStorage.setItem(HISTORY_KEY,JSON.stringify(imported.history));
+      if(imported.settings) localStorage.setItem(SETTINGS_KEY,JSON.stringify(imported.settings));
+    }catch(error){
+      keys.forEach((key,index) => {
+        try{if(previous[index] === null) localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}
+      });
+      throw new Error("Не удалось сохранить прогресс в браузере. Освободите место и попробуйте ещё раз.");
+    }
+    progress = imported.progress;studyHistory = imported.history;
+    resetSessionState();
+    if(imported.settings){
+      el.swDakuten.classList.toggle("on",imported.settings.includeDakuten);
+      el.swYoon.classList.toggle("on",imported.settings.includeYoon);
+      applySavedSettings();
+    }
+    updateMotionControl();migrateProgressToForgettingCurve();buildPool();
+    updateStreakBadge();renderStatisticsDashboard();startQuestion();
+    setTransferStatus(`Прогресс загружен: ${learned} знаков, ${totalAnswers} ответов. Расписание повторений восстановлено.`);
+  }catch(error){
+    setTransferStatus(error instanceof SyntaxError ? "Файл повреждён или не является JSON. Текущий прогресс сохранён." : error.message,true);
+  }finally{
+    el.progressFile.value = "";
+  }
+}
+
+el.btnExport.addEventListener("click",exportProgress);
+el.btnImport.addEventListener("click",() => el.progressFile.click());
+el.progressFile.addEventListener("change",() => importProgress(el.progressFile.files[0]));
+el.btnMotion.addEventListener("click",() => {
+  state.motionEnabled = !state.motionEnabled;updateMotionControl();persistSettings();
+});
+
 /* ======================================================================
    11. СБРОС ПРОГРЕССА / СПРАВКА
 ====================================================================== */
@@ -2448,18 +2823,11 @@ el.btnReset.addEventListener("click", () => {
   saveProgress(progress);
   studyHistory = {};
   saveStudyHistory(studyHistory);
-  lastStudyInteractionAt = Date.now();
-  state.streak = 0;
-  state.sessionSeen = 0;
-  state.sessionCorrect = 0;
-  state.sessionMistakes = {};
-  state._pendingReturns = [];
-  state.dueReturns = {};
-  state.sessionSeenMap = {};
-  state.recentHistory = [];
+  resetSessionState();
   updateStreakBadge();
   renderStatisticsDashboard();
   startQuestion();
+  setTransferStatus("Прогресс и история занятий сброшены.");
 });
 
 el.btnHelp.addEventListener("click", () => { el.helpModal.style.display = "flex"; });
@@ -2499,6 +2867,7 @@ document.addEventListener("keydown", (e) => {
 applySavedSettings();
 applyTheme(state.theme);
 updateSoundControl();
+updateMotionControl();
 migrateProgressToForgettingCurve();
 buildPool();
 updateStreakBadge();
@@ -2510,3 +2879,4 @@ startQuestion();
 
 </body>
 </html>
+
