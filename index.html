@@ -17,6 +17,7 @@
   })();
 </script>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="grammar.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -870,7 +871,8 @@
 
   <nav class="app-tabs" role="tablist" aria-label="Разделы приложения">
     <button class="app-tab" id="trainerTab" type="button" role="tab" aria-selected="true" aria-controls="trainerView" data-view="trainer">Тренировка</button>
-    <button class="app-tab" id="statisticsTab" type="button" role="tab" aria-selected="false" aria-controls="statisticsView" data-view="statistics">Статистика</button>
+    <button class="app-tab" id="grammarTab" type="button" role="tab" aria-selected="false" aria-controls="grammarView" data-view="grammar" tabindex="-1">Грамматика</button>
+    <button class="app-tab" id="statisticsTab" type="button" role="tab" aria-selected="false" aria-controls="statisticsView" data-view="statistics" tabindex="-1">Статистика</button>
   </nav>
 
   <section class="app-view" id="trainerView" role="tabpanel" aria-labelledby="trainerTab">
@@ -977,6 +979,23 @@
     Карточка с ошибкой обязательно вернётся через несколько вопросов и останется в очереди, пока вы не <b>исправите ответ</b>.
   </footer>
 
+  </section>
+
+  <section class="app-view grammar-view" id="grammarView" role="tabpanel" aria-labelledby="grammarTab" hidden>
+    <header class="grammar-hero">
+      <div><p class="grammar-eyebrow">Грамматика · первые шаги · N5</p><h2>От знаков — к предложениям</h2><p>Изучайте правило, собирайте предложение по памяти и закрепляйте его с интервальными повторениями. Темы сверены с <a class="grammar-source" href="https://bunpro.jp/grammar_points" target="_blank" rel="noopener noreferrer">библиотекой Bunpro ↗</a>; объяснения и задания здесь — самостоятельные.</p></div>
+      <span class="grammar-hero-mark" aria-hidden="true">文</span>
+    </header>
+    <div class="grammar-metrics" id="grammarMetrics"></div>
+    <div class="grammar-toolbar"><p class="grammar-note">Стартовая подборка N5, а не полный курс. Аккаунт Bunpro для занятий здесь не нужен.</p><button class="btn" id="grammarReview" type="button">Повторить · 0</button></div>
+    <div class="grammar-layout" id="grammarLayout">
+      <section class="grammar-library" aria-labelledby="grammarLibraryTitle"><h3 id="grammarLibraryTitle">Карта тем</h3><input class="grammar-search" id="grammarSearch" type="search" placeholder="Поиск темы…" aria-label="Найти грамматическую тему"><div class="grammar-groups" id="grammarGroups" aria-label="Группы грамматических тем"></div><div class="grammar-lessons" id="grammarLessons"></div></section>
+      <section class="grammar-lesson" id="grammarLessonDetail" aria-label="Объяснение грамматической темы"></section>
+    </div>
+    <section class="grammar-practice" id="grammarPractice" aria-label="Тренировка грамматики" hidden></section>
+    <div class="grammar-transfer"><button class="link" id="grammarExport" type="button">Сохранить весь прогресс</button><button class="link" id="grammarImport" type="button">Загрузить прогресс</button><button class="link" id="grammarReset" type="button">Сбросить грамматику</button></div>
+    <p class="grammar-message" id="grammarMessage" role="status" aria-live="polite"></p>
+    <p class="grammar-note">Повторения: от 10 минут до нескольких дней и месяцев. После ошибки тема возвращается в той же сессии. Подсказка не засчитывается как самостоятельное воспоминание. Связи с аккаунтом или платной подпиской Bunpro нет.</p>
   </section>
 
   <section class="app-view statistics-view" id="statisticsView" role="tabpanel" aria-labelledby="statisticsTab" hidden>
@@ -1185,6 +1204,7 @@ const ALL_CARDS_SOURCE = [
 
 const STORAGE_KEY = "kanaTrainerProgressV1";
 const SETTINGS_KEY = "kanaTrainerSettingsV1";
+const GRAMMAR_STORAGE_KEY = "kanaTrainerGrammarV1";
 const HISTORY_KEY = "kanaTrainerHistoryV1";
 
 function loadProgress(){
@@ -1354,6 +1374,7 @@ let audioContext = null;
 let activeStatFilter = null;
 let selectedStatsYear = new Date().getFullYear();
 let viewSwitching = false;
+let activeView = "trainer";
 let themeTransitionTimer = 0;
 let reviewWakeTimer = 0;
 let inspectedCardId = null;
@@ -1670,8 +1691,10 @@ const el = {
   helpModal: document.getElementById("helpModal"),
   closeHelp: document.getElementById("closeHelp"),
   trainerTab: document.getElementById("trainerTab"),
+  grammarTab: document.getElementById("grammarTab"),
   statisticsTab: document.getElementById("statisticsTab"),
   trainerView: document.getElementById("trainerView"),
+  grammarView: document.getElementById("grammarView"),
   statisticsView: document.getElementById("statisticsView"),
   todayStudySummary: document.getElementById("todayStudySummary"),
   activityCalendar: document.getElementById("activityCalendar"),
@@ -1782,7 +1805,7 @@ function getNextReviewAt(){
 }
 
 function updateRestCountdown(){
-  if(!state.resting) return;
+  if(!state.resting || activeView !== "trainer") return;
   clearTimeout(reviewWakeTimer);
 
   const now = Date.now();
@@ -2359,14 +2382,19 @@ function renderStatisticsDashboard(){
 
 function switchAppView(viewName){
   if(viewSwitching) return;
-  const showStatistics = viewName === "statistics";
-  const currentView = showStatistics ? el.trainerView : el.statisticsView;
-  const nextView = showStatistics ? el.statisticsView : el.trainerView;
-  if(currentView.hidden) return;
+  const views = {trainer:el.trainerView,grammar:el.grammarView,statistics:el.statisticsView};
+  if(!views[viewName] || activeView === viewName) return;
+  const currentView = views[activeView],nextView = views[viewName];
+  const keepTabFocus = document.activeElement?.getAttribute("role") === "tab";
+  clearTimeout(reviewWakeTimer);cancelActiveFeedback();
+  window.KanaGrammar?.onViewChange(false);
+  activeView = viewName;
 
   viewSwitching = true;
-  el.trainerTab.setAttribute("aria-selected",showStatistics ? "false" : "true");
-  el.statisticsTab.setAttribute("aria-selected",showStatistics ? "true" : "false");
+  [el.trainerTab,el.grammarTab,el.statisticsTab].forEach(tab => {
+    const selected = tab.dataset.view === viewName;
+    tab.setAttribute("aria-selected",String(selected));tab.tabIndex = selected ? 0 : -1;
+  });
   const reducedMotion = !state.motionEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const leaveDelay = reducedMotion ? 0 : 180;
   const enterDelay = reducedMotion ? 0 : 390;
@@ -2377,7 +2405,10 @@ function switchAppView(viewName){
     currentView.classList.remove("is-leaving");
     nextView.hidden = false;
     nextView.classList.add("is-entering");
-    if(showStatistics) renderStatisticsDashboard();
+    if(viewName === "statistics") renderStatisticsDashboard();
+    if(viewName === "grammar") window.KanaGrammar?.onViewChange(true);
+    if(viewName === "trainer") startQuestion();
+    if(keepTabFocus) document.querySelector(`[role="tab"][data-view="${viewName}"]`).focus({preventScroll:true});
     setTimeout(() => {
       nextView.classList.remove("is-entering");
       viewSwitching = false;
@@ -2595,6 +2626,7 @@ function resolveCurrentMode(){
 }
 
 function startQuestion(){
+  if(activeView !== "trainer") return;
   // Останавливаем предыдущую аудио-последовательность до смены активного знака.
   clearTimeout(reviewWakeTimer);
   cancelActiveFeedback();
@@ -2671,7 +2703,7 @@ function renderTypeInput(card){
   `;
   const input = document.getElementById("romajiInput");
   const form = document.getElementById("romajiForm");
-  input.focus();
+  if(activeView === "trainer" && !el.trainerView.hidden) input.focus({preventScroll:true});
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -2891,7 +2923,7 @@ el.soundToggle.addEventListener("click", () => {
   updateSoundControl();
   persistSettings();
   if(!state.soundEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
-  if(state.soundEnabled && state.current && !state.awaitingNext) speakKana(state.current.kana, true);
+  if(state.soundEnabled && activeView === "trainer" && state.current && !state.awaitingNext) speakKana(state.current.kana, true);
 });
 
 el.speakBtn.addEventListener("click", () => {
@@ -2906,12 +2938,15 @@ document.querySelectorAll("[data-stat-filter]").forEach(stat => {
   stat.addEventListener("blur", () => setHeatmapFilter(null));
 });
 
-[el.trainerTab,el.statisticsTab].forEach(tab => {
+const appTabs = [el.trainerTab,el.grammarTab,el.statisticsTab];
+appTabs.forEach((tab,index) => {
   tab.addEventListener("click", () => switchAppView(tab.dataset.view));
   tab.addEventListener("keydown", event => {
-    if(event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
     event.preventDefault();
-    const target = tab === el.trainerTab ? el.statisticsTab : el.trainerTab;
+    const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? appTabs.length-1
+      : (index + (event.key === "ArrowRight" ? 1 : -1) + appTabs.length) % appTabs.length;
+    const target = appTabs[nextIndex];
     target.focus();
     switchAppView(target.dataset.view);
   });
@@ -2934,13 +2969,15 @@ el.statsCurrentYear.addEventListener("click", () => {
 function setTransferStatus(message,isError = false){
   el.transferStatus.textContent = message;
   el.transferStatus.classList.toggle("is-error",isError);
+  const grammarMessage = document.getElementById("grammarMessage");
+  if(grammarMessage){grammarMessage.textContent = message;grammarMessage.classList.toggle("is-error",isError)}
 }
 
 function exportProgress(){
   persistSettings();
   const backup = {
     app:"kana-trainer",version:1,exportedAt:new Date().toISOString(),
-    progress,history:studyHistory,settings:loadSettings()
+    progress,history:studyHistory,settings:loadSettings(),grammarProgress:window.KanaGrammar?.getProgress() || {}
   };
   const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -2948,7 +2985,7 @@ function exportProgress(){
   link.href = url;link.download = `kana-progress-${localDateKey()}.json`;
   document.body.appendChild(link);link.click();link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url),1000);
-  setTransferStatus("Резервная копия сохранена: ответы, расписание повторений и история занятий.");
+  setTransferStatus("Резервная копия сохранена: кана, грамматика, расписание повторений и история занятий.");
 }
 
 function validateProgressBackup(data){
@@ -3023,7 +3060,12 @@ function validateProgressBackup(data){
       theme:data.settings.theme === "dark" || data.settings.theme === "light" ? data.settings.theme : state.theme
     };
   }
-  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings};
+  let cleanGrammar = null;
+  if(wrapped && data.grammarProgress != null){
+    if(!window.KanaGrammar) throw new Error("Модуль грамматики не загрузился. Обновите страницу перед импортом.");
+    cleanGrammar = window.KanaGrammar.validateProgress(data.grammarProgress);
+  }
+  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings,grammarProgress:cleanGrammar};
 }
 
 function resetSessionState(){
@@ -3041,15 +3083,18 @@ async function importProgress(file){
     const imported = validateProgressBackup(JSON.parse(await file.text()));
     const learned = Object.values(imported.progress).filter(p => p.seenTotal > 0).length;
     const totalAnswers = Object.values(imported.progress).reduce((sum,p) => sum + p.seenTotal,0);
-    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс и история будут заменены. Для резервной копии используйте «Сохранить прогресс».`)){
+    const grammarInfo = imported.grammarProgress === null ? "Грамматика не изменится (в этой копии её нет)." : `Тем грамматики: ${Object.keys(imported.grammarProgress).length}; её текущий прогресс тоже будет заменён.`;
+    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс каны и история будут заменены. ${grammarInfo} Для резервной копии используйте «Сохранить прогресс».`)){
       setTransferStatus("Загрузка отменена.");return;
     }
     const keys = [STORAGE_KEY,HISTORY_KEY,SETTINGS_KEY];
+    if(imported.grammarProgress !== null) keys.push(GRAMMAR_STORAGE_KEY);
     const previous = keys.map(key => localStorage.getItem(key));
     try{
       localStorage.setItem(STORAGE_KEY,JSON.stringify(imported.progress));
       localStorage.setItem(HISTORY_KEY,JSON.stringify(imported.history));
       if(imported.settings) localStorage.setItem(SETTINGS_KEY,JSON.stringify(imported.settings));
+      if(imported.grammarProgress !== null) localStorage.setItem(GRAMMAR_STORAGE_KEY,JSON.stringify(imported.grammarProgress));
     }catch(error){
       keys.forEach((key,index) => {
         try{if(previous[index] === null) localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}
@@ -3057,6 +3102,7 @@ async function importProgress(file){
       throw new Error("Не удалось сохранить прогресс в браузере. Освободите место и попробуйте ещё раз.");
     }
     progress = imported.progress;studyHistory = imported.history;
+    if(imported.grammarProgress !== null) window.KanaGrammar.setProgress(imported.grammarProgress,{persist:false});
     resetSessionState();
     if(imported.settings){
       el.swDakuten.classList.toggle("on",imported.settings.includeDakuten);
@@ -3085,8 +3131,9 @@ el.btnMotion.addEventListener("click",() => {
 ====================================================================== */
 
 el.btnReset.addEventListener("click", () => {
-  const ok = window.confirm("Сбросить весь прогресс, расписание повторений и историю статистики? Это нельзя отменить.");
+  const ok = window.confirm("Сбросить весь прогресс каны и грамматики, расписание повторений и историю статистики? Это нельзя отменить.");
   if(!ok) return;
+  if(window.KanaGrammar && !window.KanaGrammar.reset()) return;
   progress = {};
   saveProgress(progress);
   studyHistory = {};
@@ -3117,6 +3164,7 @@ window.addEventListener("focus", () => {
 
 document.addEventListener("keydown", (e) => {
   if(el.deckStatsDialog.open) return;
+  if(activeView !== "trainer" || e.target.matches("input,textarea,select,[contenteditable]")) return;
   if(state.currentMode !== "choice") return;
   if(state.awaitingNext) return;
   const idx = parseInt(e.key, 10);
@@ -3143,9 +3191,17 @@ updateStreakBadge();
 renderStatisticsDashboard();
 startQuestion();
 
+window.KanaGrammarHost = {
+  speak:speakKana,tone:playFeedbackTone,soundEnabled:()=>state.soundEnabled,
+  cancelSpeech:()=>{if("speechSynthesis" in window) window.speechSynthesis.cancel()},
+  exportProgress,importProgress:()=>el.progressFile.click()
+};
+
 })();
 </script>
+<script src="grammar-data.js"></script>
+<script src="grammar.js"></script>
+<script>window.KanaGrammar.init(window.KanaGrammarHost);</script>
 
 </body>
 </html>
-
