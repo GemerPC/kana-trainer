@@ -17,7 +17,7 @@
   })();
 </script>
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="grammar.css">
+<link rel="stylesheet" href="grammar.css?v=20261007-2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -986,9 +986,11 @@
       <div><p class="grammar-eyebrow">Грамматика · первые шаги · N5</p><h2>От знаков — к предложениям</h2><p>Изучайте правило, собирайте предложение по памяти и закрепляйте его с интервальными повторениями. Темы сверены с <a class="grammar-source" href="https://bunpro.jp/grammar_points" target="_blank" rel="noopener noreferrer">библиотекой Bunpro ↗</a>; объяснения и задания здесь — самостоятельные.</p></div>
       <span class="grammar-hero-mark" aria-hidden="true">文</span>
     </header>
+    <nav class="grammar-subtabs" aria-label="Разделы грамматики"><button id="grammarMapTab" class="grammar-secondary" type="button" aria-pressed="true">Карта грамматики</button><button id="grammarLessonsTab" class="grammar-secondary" type="button" aria-pressed="false">Уроки и примеры</button><a class="grammar-source" href="#grammar-map" target="_blank" rel="noopener noreferrer">Открыть карту отдельно ↗</a></nav>
     <div class="grammar-metrics" id="grammarMetrics"></div>
     <div class="grammar-toolbar"><p class="grammar-note">Стартовая подборка N5, а не полный курс. Аккаунт Bunpro для занятий здесь не нужен.</p><button class="btn" id="grammarReview" type="button">Повторить · 0</button></div>
-    <div class="grammar-layout" id="grammarLayout">
+    <section class="grammar-map" id="grammarMap" aria-labelledby="grammarMapTitle"><div class="grammar-map-heading"><div><h3 id="grammarMapTitle">Ваш маршрут по грамматике</h3><p class="grammar-note">Выбирайте любую тему. Цвет показывает интервальные повторения, полоска — закрепление в заданиях.</p></div><span class="grammar-level">N5 · 16 тем</span></div><div class="grammar-map-filters" id="grammarMapFilters" aria-label="Фильтр карты"></div><div class="grammar-map-lanes" id="grammarMapLanes"></div><p class="grammar-note">Рекомендуемый путь: основы → частицы → глаголы → выражения. Темы не заблокированы.</p></section>
+    <div class="grammar-layout" id="grammarLayout" hidden>
       <section class="grammar-library" aria-labelledby="grammarLibraryTitle"><h3 id="grammarLibraryTitle">Карта тем</h3><input class="grammar-search" id="grammarSearch" type="search" placeholder="Поиск темы…" aria-label="Найти грамматическую тему"><div class="grammar-groups" id="grammarGroups" aria-label="Группы грамматических тем"></div><div class="grammar-lessons" id="grammarLessons"></div></section>
       <section class="grammar-lesson" id="grammarLessonDetail" aria-label="Объяснение грамматической темы"></section>
     </div>
@@ -2389,6 +2391,7 @@ function switchAppView(viewName){
   clearTimeout(reviewWakeTimer);cancelActiveFeedback();
   window.KanaGrammar?.onViewChange(false);
   activeView = viewName;
+  if(viewName !== "grammar" && window.location.hash.startsWith("#grammar")) window.history.replaceState(null,"",`#${viewName}`);
 
   viewSwitching = true;
   [el.trainerTab,el.grammarTab,el.statisticsTab].forEach(tab => {
@@ -3192,6 +3195,7 @@ renderStatisticsDashboard();
 startQuestion();
 
 window.KanaGrammarHost = {
+  openGrammar:()=>switchAppView("grammar"),
   speak:speakKana,tone:playFeedbackTone,soundEnabled:()=>state.soundEnabled,
   cancelSpeech:()=>{if("speechSynthesis" in window) window.speechSynthesis.cancel()},
   exportProgress,importProgress:()=>el.progressFile.click()
@@ -3199,8 +3203,8 @@ window.KanaGrammarHost = {
 
 })();
 </script>
-<script src="grammar-data.js"></script>
-<script src="grammar.js"></script>
+<script src="grammar-data.js?v=20261007-2"></script>
+<script src="grammar.js?v=20261007-2"></script>
 <script>window.KanaGrammar.init(window.KanaGrammarHost);</script>
 
 </body>
