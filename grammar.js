@@ -20,6 +20,8 @@
     mashou:"Впишите вежливое окончание совместного предложения: «давайте» без вопроса."
   };
   const ROMAJI = {
+    sya:"しゃ",syu:"しゅ",syo:"しょ",tya:"ちゃ",tyu:"ちゅ",tyo:"ちょ",cya:"ちゃ",cyu:"ちゅ",cyo:"ちょ",
+    jya:"じゃ",jyu:"じゅ",jyo:"じょ",zya:"じゃ",zyu:"じゅ",zyo:"じょ",
     kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",
     nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",
     rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",bya:"びゃ",byu:"びゅ",byo:"びょ",
@@ -97,6 +99,7 @@
   function romajiToKana(value){
     let result = "",rest = value;
     while(rest){
+      if(/^nn($|[^aiueoyn])/.test(rest)){result += "ん";rest = rest.slice(2);continue}
       if(/^([bcdfghjkmprstyz])\1/.test(rest)){result += "っ";rest = rest.slice(1);continue}
       if(rest[0] === "n" && (rest.length === 1 || rest[1] === "'" || !/[aiueoy]/.test(rest[1]))){
         result += "ん";rest = rest.slice(rest[1] === "'" ? 2 : 1);continue;
@@ -110,12 +113,23 @@
   function isAnswerCorrect(value,answers){
     const input = normalizeAnswer(value);
     if(!input) return false;
-    const converted = /^[a-z']+$/.test(input) ? romajiToKana(input) : input;
+    // Reading variants belong only to romaji: do not accept misspelled Japanese particles.
+    const roman=input.replace(/[’‘ʼ]/g,"'").replace(/[āâ]/g,"aa").replace(/[īî]/g,"ii")
+      .replace(/[ūû]/g,"uu").replace(/[ēê]/g,"ei").replace(/[ōô]/g,"ou");
+    const isRoman=/^[a-z']+$/.test(roman),converted=isRoman ? romajiToKana(roman) : null;
+    const reading=kana=>kana.replace(/([おこごそぞとどのほぼぽもよろょ])う/g,"$1お")
+      .replace(/([えけげせぜてでねへべぺめれ])い/g,"$1え");
     return answers.some(answer => {
       const expected = normalizeAnswer(answer);
-      return input === expected || converted === expected
-        || (expected === "は" && input === "wa") || (expected === "を" && input === "o")
-        || (expected === "へ" && input === "e");
+      if(input === expected)return true;
+      if(!converted)return false;
+      const readings=[expected];
+      if(expected==="は")readings.push("わ");
+      if(expected==="を")readings.push("お");
+      if(expected==="へ")readings.push("え");
+      if(expected.startsWith("では"))readings.push("でわ"+expected.slice(2));
+      if(expected==="はいけません")readings.push("わいけません");
+      return readings.some(expectedReading=>reading(converted)===reading(expectedReading));
     });
   }
   function emptyProgress(now = Date.now()){
