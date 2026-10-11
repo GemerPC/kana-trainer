@@ -37,7 +37,6 @@
     const dueIds=new Set(due().map(q=>q.lessonId));
     ui.map.innerHTML=lessons.map(l=>{const p=progress[l.id],solved=Object.values(p?.questions||{}).filter(q=>q.correct>0).length;
       return `<button type="button" class="course-card ${p?.completedAt?'is-completed':''} ${dueIds.has(l.id)?'is-due':''}" data-course-lesson="${l.id}"><span>${l.number ? 'Урок '+l.number : 'Дополнительно'} · ${Math.ceil(l.seconds/60)} мин</span><strong>${escape(l.title)}</strong><span>${escape(l.subtitle)}</span><span class="course-status">${p?.completedAt?'✓ Урок пройден':'Урок ещё не пройден'}${dueIds.has(l.id)?' · Пора повторить':''}</span><span class="grammar-map-progress" role="progressbar" aria-label="Задания решены самостоятельно" aria-valuemin="0" aria-valuemax="${l.questions.length}" aria-valuenow="${solved}"><i style="width:${solved/l.questions.length*100}%"></i></span><span>Закреплено ${solved}/${l.questions.length}${p?.watchedAt?' · Видео просмотрено':''}</span>${accuracy(p)}</button>`}).join('');
-    const before23=ui.map.querySelector('[data-course-lesson="lesson-23"]');before23?.insertAdjacentHTML('beforebegin','<p class="course-missing">Урок 22 отсутствует в вашей папке. Нумерация оригинальных видео сохранена.</p>');
     ui.map.querySelectorAll('[data-course-lesson]').forEach(b=>b.addEventListener('click',()=>openLesson(b.dataset.courseLesson)));
   }
   function stop(){token++;host?.cancelSpeech();clearTimeout(wake);rememberVideo?.();const video=ui?.lesson.querySelector('video');if(video && !video.paused)video.pause()}

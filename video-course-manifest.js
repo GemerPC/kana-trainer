@@ -132,6 +132,12 @@ window.KANA_VIDEO_MANIFEST = [
     "seconds": 450
   },
   {
+    "name": "ЯПОНСКИЙ С НУЛЯ ДО N5 - Урок 22｜ EasyTravel - Открывай Японию｜-(1080p30).mp4",
+    "number": 22,
+    "id": "lesson-22",
+    "seconds": 777
+  },
+  {
     "name": "ЯПОНСКИЙ С НУЛЯ ДО N5 - Урок 23｜ EasyTravel - Открывай Японию｜-(1080p30).mp4",
     "number": 23,
     "id": "lesson-23",
