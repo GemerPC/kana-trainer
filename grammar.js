@@ -161,7 +161,7 @@
         lastResult:value.lastResult === "correct" || value.lastResult === "wrong" ? value.lastResult : null,
         practiceSeen:number(value.practiceSeen ?? 0,1e9,true),practiceCorrect:number(value.practiceCorrect ?? 0,1e9,true),
         practiceLapses:number(value.practiceLapses ?? 0,1e9,true),lastPracticeResult:["correct","wrong","hinted"].includes(value.lastPracticeResult) ? value.lastPracticeResult : null,
-        lastPracticeAt:number(value.lastPracticeAt ?? 0,Date.UTC(2200,0,1)),drillSolved:[]
+        lastPracticeAt:number(value.lastPracticeAt ?? 0,Date.UTC(2200,0,1)),lessonCompletedAt:number(value.lessonCompletedAt ?? 0,Date.UTC(2200,0,1)),drillSolved:[]
       };
       if(item.correct + item.lapses > item.seen || item.streak > item.correct) throw new Error("Счётчики ответов грамматики не совпадают.");
       const exerciseKeys = new Set(getExercises(lessons.find(lesson=>lesson.id === id)).map(exercise=>exercise.key));
@@ -190,36 +190,41 @@
     if(ms < DAY) return `${Math.ceil(ms/(60*MINUTE))} ч`;
     return `${Math.ceil(ms/DAY)} дн`;
   }
-  function category(p){
-    if(!p?.startedAt) return "new";
-    if(p.nextReviewAt <= Date.now()) return "due";
-    return p.intervalMs >= 7*DAY ? "mastered" : "learning";
+  function isLessonCompleted(lessonId,p=progress[lessonId]){
+    const lesson=lessons.find(item=>item.id===lessonId);
+    return !!lesson && (!!p?.lessonCompletedAt || getExercises(lesson).every(q=>p?.drillSolved?.includes(q.key)));
+  }
+  function category(p,lessonId){
+    if(p?.startedAt && p.nextReviewAt <= Date.now()) return "due";
+    if(p?.startedAt && p.intervalMs >= 7*DAY) return "mastered";
+    if(isLessonCompleted(lessonId,p)) return "completed";
+    return p?.startedAt || p?.practiceSeen ? "learning" : "new";
   }
   function renderMetrics(){
     const entries = Object.values(progress).filter(p=>p.startedAt>0),seen = entries.reduce((sum,p)=>sum+p.seen,0),correct = entries.reduce((sum,p)=>sum+p.correct,0);
-    const values = [[entries.length,"Тем изучается"],[getDueLessonIds(progress).length,"К повторению"],
-      [entries.filter(p=>category(p) === "mastered").length,"Закреплено"],[seen ? `${Math.round(correct/seen*100)}%` : "—","Без подсказок"]];
+    const values = [[Object.values(progress).filter(p=>p.startedAt || p.practiceSeen).length,"Тем начато"],[getDueLessonIds(progress).length,"К повторению"],
+      [lessons.filter(lesson=>isLessonCompleted(lesson.id)).length,"Уроков пройдено"],[seen ? `${Math.round(correct/seen*100)}%` : "—","Повторы без подсказок"]];
     ui.metrics.innerHTML = values.map(([value,label])=>`<div class="grammar-metric"><strong>${value}</strong><span>${label}</span></div>`).join("");
     ui.review.textContent = `Повторить · ${getDueLessonIds(progress).length}`;
   }
   function renderMap(){
-    const names = {new:"Новые",due:"К повторению",learning:"Изучаются",mastered:"Закреплены"};
+    const names = {new:"Новые",due:"К повторению",learning:"Изучаются",completed:"Пройдены",mastered:"Закреплены"};
     ui.mapFilters.innerHTML = "";
     [["all","Все темы"],...Object.entries(names)].forEach(([filter,title])=>{
       const button = document.createElement("button");button.type="button";button.className="grammar-group";
-      const count = lessons.filter(lesson=>filter === "all" || category(progress[lesson.id]) === filter).length;
+      const count = lessons.filter(lesson=>filter === "all" || (filter === "completed" ? isLessonCompleted(lesson.id) : category(progress[lesson.id],lesson.id) === filter)).length;
       button.textContent=`${title} · ${count}`;button.setAttribute("aria-pressed",String(filter === mapFilter));
       button.addEventListener("click",()=>{mapFilter=filter;renderMap()});ui.mapFilters.appendChild(button);
     });
     ui.mapLanes.innerHTML = "";
     Object.entries(GROUPS).filter(([key])=>key!=="all").forEach(([key,label],index)=>{
-      const cards = lessons.filter(lesson=>lesson.group===key && (mapFilter==="all" || category(progress[lesson.id])===mapFilter));
+      const cards = lessons.filter(lesson=>lesson.group===key && (mapFilter==="all" || (mapFilter==="completed" ? isLessonCompleted(lesson.id) : category(progress[lesson.id],lesson.id)===mapFilter)));
       if(!cards.length) return;
       const lane=document.createElement("section");lane.className="grammar-map-lane";
       lane.innerHTML=`<h4><span>${index+1}</span>${label}<small>${cards.length} тем</small></h4>`;
       cards.forEach(lesson=>{
-        const p=progress[lesson.id],status=category(p),total=getExercises(lesson).length,solved=p?.drillSolved?.length || 0;
-        const label={new:"Новая тема",due:"Пора повторить",learning:"Изучается",mastered:"Закреплена"}[status];
+        const p=progress[lesson.id],status=category(p,lesson.id),total=getExercises(lesson).length,solved=p?.drillSolved?.length || 0;
+        const label={new:"Новая тема",due:"Пора повторить",learning:"Изучается",completed:"Урок пройден",mastered:"Закреплена"}[status]+(isLessonCompleted(lesson.id) && status!=="completed" ? " · Урок пройден" : "");
         const button=document.createElement("button");button.type="button";button.className=`grammar-map-node ${status}`;button.dataset.lessonId=lesson.id;
         button.innerHTML=`<span class="grammar-map-node-top"><strong lang="ja">${escape(lesson.title)}</strong><i class="grammar-status-dot ${status}" aria-hidden="true"></i></span><span class="grammar-map-node-meaning">${escape(lesson.meaning)}</span><span class="grammar-map-node-status">${label}${p?.startedAt && status!=="due" ? ` · ${duration(p.nextReviewAt-Date.now())}` : ""}</span><span class="grammar-map-progress" role="progressbar" aria-label="Закрепление темы" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${solved}"><i style="width:${solved/total*100}%"></i></span><small>Закрепление ${solved}/${total} · ${lesson.examples.length} примеров</small>`;
         button.insertAdjacentHTML("afterbegin",`<span class="grammar-map-route">Урок ${lesson.routeNumber}</span>`);
@@ -249,8 +254,8 @@
     const matches = lessons.filter(lesson => (group === "all" || lesson.group === group)
       && (!query || `${lesson.title} ${lesson.meaning} ${lesson.explanation}`.toLowerCase().includes(query)));
     matches.forEach(lesson => {
-      const status = category(progress[lesson.id]);
-      const label = {new:"Новая тема",due:"К повторению",learning:"Изучается",mastered:"Закреплена"}[status];
+      const status = category(progress[lesson.id],lesson.id);
+      const label = {new:"Новая тема",due:"К повторению",learning:"Изучается",completed:"Урок пройден",mastered:"Закреплена"}[status]+(isLessonCompleted(lesson.id) && status!=="completed" ? " · Урок пройден" : "");
       const button = document.createElement("button");
       button.type = "button";button.className = "grammar-lesson-button";button.dataset.lessonId = lesson.id;
       button.setAttribute("aria-pressed",String(selectedId === lesson.id));
@@ -267,6 +272,7 @@
     ui.detail.innerHTML = `<div class="grammar-detail-header"><div><h3>${escape(lesson.title)}</h3><p class="grammar-meaning">${escape(lesson.meaning)}</p></div><span class="grammar-level">${escape(lesson.level)}</span></div><p class="grammar-explanation">${escape(lesson.explanation)}</p><div class="grammar-form">${escape(lesson.form)}</div><div class="grammar-lesson-actions"><button class="grammar-secondary" id="grammarPracticeLesson" type="button">Закрепить · ${getExercises(lesson).length} заданий</button><button class="btn" id="grammarLearnLesson" type="button" ${started && !due ? "disabled" : ""}>${!started ? "Добавить к повторениям" : due ? "Повторить тему" : "Повтор пока не нужен"}</button></div><p class="grammar-note grammar-practice-note">Закрепление: выбор значения, выбор формы и ввод пропуска. Можно заниматься в любое время — расписание повторений не меняется.</p><h4 class="grammar-examples-title">Примеры в разных ситуациях · ${lesson.examples.length}</h4><div class="grammar-examples">${lesson.examples.map((example,index)=>`<div class="grammar-example"><div><strong lang="ja">${escape(example.jp)}</strong><small>${escape(example.ru)}</small></div><button class="grammar-speak" type="button" data-example="${index}" aria-label="Произнести пример ${index+1}">♪</button></div>`).join("")}</div><p class="grammar-schedule">${!started ? "Тема ещё не в расписании. Изучите примеры и добавьте её к повторениям, когда будете готовы." : `Ответов в повторениях: ${p.seen} · Без подсказок: ${p.correct} · Ошибок: ${p.lapses}<br>${due ? "Пора повторить" : `Следующий повтор через ${duration(p.nextReviewAt-Date.now())}`}`}<br>Закреплено заданий: ${p?.drillSolved?.length || 0}/${getExercises(lesson).length}. <a class="grammar-source" href="${escape(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer">Подробнее на Bunpro ↗</a></p>`;
     const plan=getPracticePlan(lesson.id),earlierRules=[...new Set((lesson.combinationQuestions || []).flatMap(q=>q.slots.map(slot=>slot.lessonId)))].filter(id=>id!==lesson.id);
     ui.detail.querySelector(".grammar-level").textContent=`Урок ${lesson.routeNumber} · N5`;
+    if(isLessonCompleted(lesson.id)) ui.detail.querySelector(".grammar-level").insertAdjacentHTML("afterend",'<span class="grammar-completed-badge">✓ Урок пройден</span>');
     ui.detail.querySelector("#grammarPracticeLesson").textContent=`Заниматься · ${plan.queue.length} заданий`;
     ui.detail.querySelector("#grammarPracticeLesson").className="btn";
     ui.detail.querySelector("#grammarLearnLesson").className="grammar-secondary";
@@ -279,6 +285,24 @@
     ui.detail.querySelector("#grammarPracticeLesson").addEventListener("click",()=>startPractice(lesson.id));
   }
   function stopAudio(){audioToken++;host?.cancelSpeech()}
+  function speechParts(lesson,question,revealed){
+    if(question.type==="meaning") return [revealed ? lesson.examples[0].jp : lesson.title];
+    if(question.type==="combine") return revealed ? [question.fragments.map((part,i)=>part+(question.slots[i]?.answers[0] || "")).join("")] : question.fragments;
+    return revealed ? [question.before+(question.options ? question.options[question.correctIndex] : question.answers[0])+question.after] : [question.before,question.after];
+  }
+  async function speakQuestion(lesson,question){
+    stopAudio();const token=audioToken,current=session?.current,button=ui.practice.querySelector("#grammarSpeakQuestion");
+    if(!active || !current) return;
+    button?.setAttribute("aria-busy","true");
+    try{
+      // Separate utterances leave the gaps unspoken: listening must not reveal the answer.
+      for(const part of speechParts(lesson,question,session.locked)){
+        if(token!==audioToken || !active || session?.current!==current) break;
+        if(/[\p{L}\p{N}]/u.test(part)) await host?.speak(part,true);
+      }
+    }catch(_error){message("Не удалось озвучить предложение. Проверьте поддержку японской речи в браузере.",true)}
+    finally{button?.removeAttribute("aria-busy")}
+  }
   function showLibrary(){
     setScreen("library");
   }
@@ -308,16 +332,17 @@
     const meaning=question.type==="meaning",combine=question.type==="combine",fill=question.type==="fill" || combine;
     const options=(question.options || []).map((text,index)=>({text,index}));
     for(let index=options.length-1;index>0;index--){const other=Math.floor(Math.random()*(index+1));[options[index],options[other]]=[options[other],options[index]]}
-    const prompt=meaning ? question.prompt : combine ? "Соберите предложение: заполните все пропуски по переводу. Новое правило используется вместе с предыдущими." : INSTRUCTIONS[lesson.id] || "Заполните пропуск по переводу.";
+    const prompt=meaning ? question.prompt : combine ? "Заполните все пропуски, чтобы предложение соответствовало переводу." : "Заполните пропуск по переводу.";
     const controls=combine ? question.slots.map((slot,i)=>`<label class="grammar-slot-input">Пропуск ${i+1}<input ${i===0 ? 'id="grammarAnswer"' : ''} data-slot="${i}" type="text" placeholder="Ответ…" aria-label="Ответ для пропуска ${i+1}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`).join("") : '<input id="grammarAnswer" type="text" placeholder="Ответ…" aria-label="Ответ на задание по грамматике" autocomplete="off" autocapitalize="off" spellcheck="false">';
-    const answerZone=fill ? `<form class="grammar-answer-form ${combine ? "grammar-combination-form" : ""}">${controls}<button class="btn" type="submit">Проверить</button></form><p class="grammar-input-note">Можно вводить японскую запись или ромадзи. Для частицы темы допустимы ha и wa; для частицы объекта — wo и o.</p>`
+    const answerZone=fill ? `<form class="grammar-answer-form ${combine ? "grammar-combination-form" : ""}">${controls}<button class="btn" type="submit">Проверить</button></form><p class="grammar-input-note">Можно вводить японскую запись или ромадзи.</p>`
       : `<div class="grammar-choice-list" role="group" aria-label="Варианты ответа">${options.map(option=>`<button type="button" class="grammar-choice" data-option-index="${option.index}">${escape(option.text)}</button>`).join("")}</div>`;
     const sentence=meaning ? escape(lesson.title) : combine ? question.slots.map((slot,i)=>escape(question.fragments[i])+(i===question.slots.length-1 ? `<span class="grammar-sentence-ending"><span class="grammar-blank" data-slot="${i}">${i+1}</span>${escape(question.fragments.at(-1))}</span>` : `<span class="grammar-blank" data-slot="${i}">${i+1}</span>`)).join("") : `${escape(question.before)}<span class="grammar-blank">…</span>${escape(question.after)}`;
-    const role=session.current.role==="recall" ? "Вспоминаем предыдущий урок" : combine ? "Соединяем изученные правила" : "Тема урока";
-    const roleTitle=combine ? [...new Set(question.slots.map(slot=>slot.lessonId))].map(id=>lessons.find(t=>t.id===id).title).join(" + ") : lesson.title;
-    ui.practice.innerHTML = `<div class="grammar-practice-head"><div><p class="grammar-eyebrow">${meaning ? "Значение правила" : combine ? "Соберите предложение" : fill ? "Введите пропуск" : "Выберите форму"}</p><h3>${session.kind==="practice" ? "Закрепление" : "Проверка памяти"} · N5</h3></div><span class="grammar-counter">Осталось ${session.queue.length+1}</span></div>${session.kind==="practice" ? `<p class="grammar-recall-label ${session.current.role==="recall" ? "is-recall" : ""}">${role} · <span lang="ja">${escape(lesson.title)}</span></p>` : ""}<p class="grammar-note">${escape(prompt)}</p><p class="grammar-sentence" lang="ja">${sentence}</p>${meaning ? "" : `<p class="grammar-translation">${escape(question.translation)}</p>`}${answerZone}<details class="grammar-hint"><summary>Подсказка и правило</summary><p>${escape(question.hint || lesson.meaning)}</p><p><strong>${escape(lesson.title)}</strong> · ${escape(lesson.explanation)}</p></details><div class="grammar-feedback" hidden role="status" aria-live="polite"></div><div class="grammar-next-row"><button class="grammar-secondary" type="button" id="grammarBackToLessons">К урокам</button><span class="grammar-note">${session.kind==="practice" ? "Свободная практика не меняет расписание." : "После ошибки тема вернётся в этой сессии."}</span></div>`;
+    const role=combine ? "Несколько пропусков" : "Практика в контексте";
+    ui.practice.innerHTML = `<div class="grammar-practice-head"><div><p class="grammar-eyebrow">${meaning ? "Значение правила" : combine ? "Соберите предложение" : fill ? "Введите пропуск" : "Выберите форму"}</p><h3>${session.kind==="practice" ? "Закрепление" : "Проверка памяти"} · N5</h3></div><span class="grammar-counter">Осталось ${session.queue.length+1}</span></div>${session.kind==="practice" ? `<p class="grammar-recall-label">${role}</p>` : ""}<p class="grammar-note">${escape(prompt)}</p><p class="grammar-sentence" lang="ja">${sentence}</p>${meaning ? "" : `<p class="grammar-translation">${escape(question.translation)}</p>`}${answerZone}<details class="grammar-hint"><summary>Подсказка и правило</summary><p>${escape(question.hint || lesson.meaning)}</p><p><strong>${escape(lesson.title)}</strong> · ${escape(lesson.explanation)}</p></details><div class="grammar-feedback" hidden role="status" aria-live="polite"></div><div class="grammar-next-row"><button class="grammar-secondary" type="button" id="grammarBackToLessons">К урокам</button><span class="grammar-note">${session.kind==="practice" ? "Свободная практика не меняет расписание." : "После ошибки тема вернётся в этой сессии."}</span></div>`;
     const input = ui.practice.querySelector("input");
-    const roleLabel=ui.practice.querySelector(".grammar-recall-label span");if(roleLabel)roleLabel.textContent=roleTitle;
+    ui.practice.querySelector(".grammar-sentence").insertAdjacentHTML("afterend",`<div class="grammar-sentence-audio"><button id="grammarSpeakQuestion" class="grammar-secondary" type="button">♪ ${meaning ? "Произнести" : "Озвучить предложение"}</button>${meaning ? "" : '<span class="grammar-note" id="grammarAudioNote">До ответа пропуски не озвучиваются.</span>'}</div>`);
+    ui.practice.querySelector("#grammarSpeakQuestion").addEventListener("click",()=>speakQuestion(lesson,question));
+    if(INSTRUCTIONS[lesson.id])ui.practice.querySelector(".grammar-hint").insertAdjacentHTML("beforeend",`<p>${escape(INSTRUCTIONS[lesson.id])}</p>`);
     if(combine)ui.practice.querySelector("form").style.setProperty("--grammar-slots",question.slots.length);
     if(input){
     if(active) input.focus({preventScroll:true});
@@ -345,6 +370,9 @@
     let next,updated;
     if(session.kind==="practice"){
       updated=recordPracticeAnswer(progress,lesson.id,question,ok,Date.now(),usedHint,slotResults);next=updated[lesson.id];
+      if(ok && !session.queue.length){
+        updated[selectedId]={...updated[selectedId],lessonCompletedAt:Date.now()};
+      }
     }else{next = getNextProgress(progress[lesson.id],ok,Date.now(),usedHint);updated={...progress,[lesson.id]:next}}
     if(!save(updated)) return;
     session.locked = true;session.completed++;
@@ -360,8 +388,9 @@
     const schedule=session.kind==="practice" ? "Свободное закрепление: расписание повторений не изменилось." : `Следующее повторение через ${duration(next.intervalMs)}.`;
     feedback.innerHTML = `<strong>${ok ? usedHint ? "Верно с подсказкой — попробуйте позже самостоятельно" : "Верно!" : `Правильный ответ: ${escape(answer)}`}</strong><p>${escape(question.explanation)}</p><p>${ok ? schedule : "Задание вернётся после других; если других нет — сразу следующим вопросом."}</p><button class="btn" id="grammarNextQuestion" type="button">Дальше →</button>`;
     feedback.querySelector("button").addEventListener("click",nextQuestion);feedback.querySelector("button").focus({preventScroll:true});
-    renderMetrics();const token = ++audioToken;
-    const speech=question.type==="meaning" ? lesson.examples[0].jp : combine ? question.fragments.map((part,i)=>part+(question.slots[i]?.answers[0] || "")).join("") : question.before+answer+question.after;
+    const audioNote=ui.practice.querySelector("#grammarAudioNote");if(audioNote)audioNote.textContent="Теперь можно прослушать полное предложение.";
+    stopAudio();renderMetrics();const token = audioToken;
+    const speech=speechParts(lesson,question,true)[0];
     if(host?.soundEnabled()) Promise.resolve(host.tone(ok)).then(()=>{if(active && token === audioToken) return host.speak(speech,false)}).catch(()=>{});
   }
   function renderFinish(){
@@ -424,5 +453,5 @@
     if(window.location.hash.startsWith("#grammar")) route();
   }
   window.KanaGrammar = {storageKey:STORAGE_KEY,init,onViewChange,getProgress:()=>JSON.parse(JSON.stringify(progress)),validateProgress,setProgress,reset,
-    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises,getPracticePlan,getPracticeProgress,recordPracticeAnswer}};
+    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises,getPracticePlan,getPracticeProgress,recordPracticeAnswer,isLessonCompleted,speechParts}};
 })();
