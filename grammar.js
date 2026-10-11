@@ -200,6 +200,18 @@
     if(isLessonCompleted(lessonId,p)) return "completed";
     return p?.startedAt || p?.practiceSeen ? "learning" : "new";
   }
+  function getAnswerStats(p){
+    const total=(p?.seen || 0)+(p?.practiceSeen || 0),correct=(p?.correct || 0)+(p?.practiceCorrect || 0),wrong=(p?.lapses || 0)+(p?.practiceLapses || 0);
+    const hinted=Math.max(0,total-correct-wrong),percent=value=>total ? value/total*100 : 0;
+    return {total,correct,wrong,hinted,correctPercent:percent(correct),wrongPercent:percent(wrong),hintedPercent:percent(hinted)};
+  }
+  function renderAnswerStats(p){
+    const s=getAnswerStats(p);
+    if(!s.total) return '<span class="grammar-accuracy"><span class="grammar-accuracy-title">Точность ответов · пока нет данных</span><span class="grammar-accuracy-bar is-empty" aria-hidden="true"></span></span>';
+    const text=`Верно ${Math.round(s.correctPercent)}% · Ошибки ${Math.round(s.wrongPercent)}%${s.hinted ? ` · С подсказкой ${Math.round(s.hintedPercent)}%` : ""}`;
+    const counts=`${s.total} ответов: ${s.correct} самостоятельно, ${s.wrong} ошибок, ${s.hinted} с подсказкой. Учитываются все попытки в уроках и повторениях.`;
+    return `<span class="grammar-accuracy" title="${counts}"><span class="grammar-accuracy-title">${text}</span><span class="grammar-accuracy-bar" role="img" aria-label="${text}. ${counts}"><i class="is-correct" style="width:${s.correctPercent}%"></i><i class="is-wrong" style="width:${s.wrongPercent}%"></i><i class="is-hinted" style="width:${s.hintedPercent}%"></i></span><small>${s.total} ответов · за всё время</small></span>`;
+  }
   function renderMetrics(){
     const entries = Object.values(progress).filter(p=>p.startedAt>0),seen = entries.reduce((sum,p)=>sum+p.seen,0),correct = entries.reduce((sum,p)=>sum+p.correct,0);
     const values = [[Object.values(progress).filter(p=>p.startedAt || p.practiceSeen).length,"Тем начато"],[getDueLessonIds(progress).length,"К повторению"],
@@ -228,6 +240,7 @@
         const button=document.createElement("button");button.type="button";button.className=`grammar-map-node ${status}`;button.dataset.lessonId=lesson.id;
         button.innerHTML=`<span class="grammar-map-node-top"><strong lang="ja">${escape(lesson.title)}</strong><i class="grammar-status-dot ${status}" aria-hidden="true"></i></span><span class="grammar-map-node-meaning">${escape(lesson.meaning)}</span><span class="grammar-map-node-status">${label}${p?.startedAt && status!=="due" ? ` · ${duration(p.nextReviewAt-Date.now())}` : ""}</span><span class="grammar-map-progress" role="progressbar" aria-label="Закрепление темы" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${solved}"><i style="width:${solved/total*100}%"></i></span><small>Закрепление ${solved}/${total} · ${lesson.examples.length} примеров</small>`;
         button.insertAdjacentHTML("afterbegin",`<span class="grammar-map-route">Урок ${lesson.routeNumber}</span>`);
+        button.insertAdjacentHTML("beforeend",renderAnswerStats(p));
         button.addEventListener("click",()=>{selectedId=lesson.id;setScreen("library")});lane.appendChild(button);
       });
       ui.mapLanes.appendChild(lane);
@@ -272,6 +285,7 @@
     ui.detail.innerHTML = `<div class="grammar-detail-header"><div><h3>${escape(lesson.title)}</h3><p class="grammar-meaning">${escape(lesson.meaning)}</p></div><span class="grammar-level">${escape(lesson.level)}</span></div><p class="grammar-explanation">${escape(lesson.explanation)}</p><div class="grammar-form">${escape(lesson.form)}</div><div class="grammar-lesson-actions"><button class="grammar-secondary" id="grammarPracticeLesson" type="button">Закрепить · ${getExercises(lesson).length} заданий</button><button class="btn" id="grammarLearnLesson" type="button" ${started && !due ? "disabled" : ""}>${!started ? "Добавить к повторениям" : due ? "Повторить тему" : "Повтор пока не нужен"}</button></div><p class="grammar-note grammar-practice-note">Закрепление: выбор значения, выбор формы и ввод пропуска. Можно заниматься в любое время — расписание повторений не меняется.</p><h4 class="grammar-examples-title">Примеры в разных ситуациях · ${lesson.examples.length}</h4><div class="grammar-examples">${lesson.examples.map((example,index)=>`<div class="grammar-example"><div><strong lang="ja">${escape(example.jp)}</strong><small>${escape(example.ru)}</small></div><button class="grammar-speak" type="button" data-example="${index}" aria-label="Произнести пример ${index+1}">♪</button></div>`).join("")}</div><p class="grammar-schedule">${!started ? "Тема ещё не в расписании. Изучите примеры и добавьте её к повторениям, когда будете готовы." : `Ответов в повторениях: ${p.seen} · Без подсказок: ${p.correct} · Ошибок: ${p.lapses}<br>${due ? "Пора повторить" : `Следующий повтор через ${duration(p.nextReviewAt-Date.now())}`}`}<br>Закреплено заданий: ${p?.drillSolved?.length || 0}/${getExercises(lesson).length}. <a class="grammar-source" href="${escape(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer">Подробнее на Bunpro ↗</a></p>`;
     const plan=getPracticePlan(lesson.id),earlierRules=[...new Set((lesson.combinationQuestions || []).flatMap(q=>q.slots.map(slot=>slot.lessonId)))].filter(id=>id!==lesson.id);
     ui.detail.querySelector(".grammar-level").textContent=`Урок ${lesson.routeNumber} · N5`;
+    ui.detail.querySelector(".grammar-schedule").insertAdjacentHTML("beforebegin",`<section class="grammar-answer-statistics" aria-label="Статистика ответов по теме"><h4>Как получается эта тема</h4>${renderAnswerStats(p)}<p class="grammar-note">Все попытки в уроках и повторениях, включая повторные ответы после ошибки. Зелёный — самостоятельно, красный — ошибка, золотой — с подсказкой. Прохождение урока не означает отсутствие ошибок.</p></section>`);
     if(isLessonCompleted(lesson.id)) ui.detail.querySelector(".grammar-level").insertAdjacentHTML("afterend",'<span class="grammar-completed-badge">✓ Урок пройден</span>');
     ui.detail.querySelector("#grammarPracticeLesson").textContent=`Заниматься · ${plan.queue.length} заданий`;
     ui.detail.querySelector("#grammarPracticeLesson").className="btn";
@@ -453,5 +467,5 @@
     if(window.location.hash.startsWith("#grammar")) route();
   }
   window.KanaGrammar = {storageKey:STORAGE_KEY,init,onViewChange,getProgress:()=>JSON.parse(JSON.stringify(progress)),validateProgress,setProgress,reset,
-    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises,getPracticePlan,getPracticeProgress,recordPracticeAnswer,isLessonCompleted,speechParts}};
+    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises,getPracticePlan,getPracticeProgress,recordPracticeAnswer,isLessonCompleted,speechParts,getAnswerStats}};
 })();
