@@ -40,8 +40,53 @@
     return [
       ...lesson.meaningQuestions.map((question,index)=>({...question,type:"meaning",index,key:`meaning:${index}`})),
       ...lesson.questions.map((question,index)=>({...question,type:"fill",index,key:`fill:${index}`})),
-      ...lesson.choiceQuestions.map((question,index)=>({...question,type:"choice",index,key:`choice:${index}`}))
+      ...lesson.choiceQuestions.map((question,index)=>({...question,type:"choice",index,key:`choice:${index}`})),
+      ...(lesson.combinationQuestions || []).map((question,index)=>({...question,type:"combine",index,key:`combine:${index}`}))
     ];
+  }
+
+  function getPracticePlan(lessonId,data=progress){
+    const lesson=lessons.find(item=>item.id===lessonId),position=lessons.indexOf(lesson);
+    if(!lesson) throw new Error("Неизвестный урок.");
+    const candidates=lessons.slice(0,position).filter(item=>(data[item.id]?.seen || data[item.id]?.practiceSeen || 0)>0);
+    const weakness=item=>{const p=data[item.id];return Number(p.lastPracticeResult==="wrong" || p.lastResult==="wrong")+((p.practiceLapses || 0)+(p.lapses || 0))/Math.max(1,(p.practiceSeen || 0)+(p.seen || 0))};
+    const selected=[];
+    const add=item=>{if(item && !selected.includes(item))selected.push(item)};
+    const weakest=[...candidates].sort((a,b)=>weakness(b)-weakness(a))[0];
+    if(weakest && weakness(weakest)>0)add(weakest);
+    add(candidates.at(-1));
+    const remaining=candidates.filter(item=>!selected.includes(item));
+    const cursor=(data[lessonId]?.practiceSeen || 0)+(data[lessonId]?.questionCursor || 0);
+    for(let i=0;i<remaining.length && selected.length<3;i++)add(remaining[(cursor+i)%remaining.length]);
+    const exercises=getExercises(lesson),base=exercises.filter(q=>q.type!=="combine");
+    const order=[0,1,7,2,3,8,4,5,6],current=order.map(i=>({lessonId,type:base[i].type,index:base[i].index,role:"new"}));
+    exercises.filter(q=>q.type==="combine").forEach((q,i)=>current.splice(Math.min(current.length,4+i*5),0,{lessonId,type:q.type,index:q.index,role:"combine"}));
+    const recall=selected.flatMap(item=>[
+      {lessonId:item.id,type:"meaning",index:0,role:"recall"},
+      {lessonId:item.id,type:"fill",index:(data[item.id].practiceSeen || data[item.id].questionCursor || 0)%item.questions.length,role:"recall"}
+    ]);
+    const queue=[];
+    current.forEach((item,i)=>{queue.push(item);if((i+1)%2===0 && recall.length)queue.push(recall.shift())});
+    queue.push(...recall);
+    return {queue,previousLessonIds:selected.map(item=>item.id),newCount:base.length,combinationCount:exercises.length-base.length,recallCount:selected.length*2};
+  }
+
+  function getPracticeProgress(previous,ok,now,hintUsed=false,key=null){
+    const p={...emptyProgress(0),...previous},solved=new Set(p.drillSolved || []);
+    if(ok && !hintUsed && key)solved.add(key);
+    return {...p,practiceSeen:(p.practiceSeen || 0)+1,practiceCorrect:(p.practiceCorrect || 0)+Number(ok && !hintUsed),
+      practiceLapses:(p.practiceLapses || 0)+Number(!ok),lastPracticeAt:now,lastPracticeResult:ok ? hintUsed ? "hinted" : "correct" : "wrong",drillSolved:[...solved]};
+  }
+
+  function recordPracticeAnswer(data,lessonId,question,ok,now,hintUsed=false,slotResults=[]){
+    const updated={...data};
+    if(question.type==="combine"){
+      [...new Set(question.slots.map(slot=>slot.lessonId))].forEach(id=>{
+        const ruleOK=question.slots.every((slot,index)=>slot.lessonId!==id || slotResults[index]);
+        updated[id]=getPracticeProgress(data[id],ruleOK,now,hintUsed,id===lessonId && ok ? question.key:null);
+      });
+    }else updated[lessonId]=getPracticeProgress(data[lessonId],ok,now,hintUsed,question.key);
+    return updated;
   }
 
   function escape(value){return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]))}
@@ -115,13 +160,14 @@
         questionCursor:number(value.questionCursor ?? 0,1e9,true),
         lastResult:value.lastResult === "correct" || value.lastResult === "wrong" ? value.lastResult : null,
         practiceSeen:number(value.practiceSeen ?? 0,1e9,true),practiceCorrect:number(value.practiceCorrect ?? 0,1e9,true),
+        practiceLapses:number(value.practiceLapses ?? 0,1e9,true),lastPracticeResult:["correct","wrong","hinted"].includes(value.lastPracticeResult) ? value.lastPracticeResult : null,
         lastPracticeAt:number(value.lastPracticeAt ?? 0,Date.UTC(2200,0,1)),drillSolved:[]
       };
       if(item.correct + item.lapses > item.seen || item.streak > item.correct) throw new Error("Счётчики ответов грамматики не совпадают.");
       const exerciseKeys = new Set(getExercises(lessons.find(lesson=>lesson.id === id)).map(exercise=>exercise.key));
       if(value.drillSolved != null && (!Array.isArray(value.drillSolved) || value.drillSolved.some(key=>!exerciseKeys.has(key)))) throw new Error("Повреждён прогресс закрепления.");
       item.drillSolved = [...new Set(value.drillSolved || [])];
-      if(item.practiceCorrect > item.practiceSeen || item.drillSolved.length > item.practiceCorrect) throw new Error("Счётчики закрепления не совпадают.");
+      if(item.practiceCorrect+item.practiceLapses > item.practiceSeen || item.drillSolved.length > item.practiceCorrect) throw new Error("Счётчики закрепления не совпадают.");
       clean[id] = item;
     });
     if(Object.keys(data).length && !Object.keys(clean).length) throw new Error("Не найдены знакомые грамматические темы.");
@@ -176,6 +222,7 @@
         const label={new:"Новая тема",due:"Пора повторить",learning:"Изучается",mastered:"Закреплена"}[status];
         const button=document.createElement("button");button.type="button";button.className=`grammar-map-node ${status}`;button.dataset.lessonId=lesson.id;
         button.innerHTML=`<span class="grammar-map-node-top"><strong lang="ja">${escape(lesson.title)}</strong><i class="grammar-status-dot ${status}" aria-hidden="true"></i></span><span class="grammar-map-node-meaning">${escape(lesson.meaning)}</span><span class="grammar-map-node-status">${label}${p?.startedAt && status!=="due" ? ` · ${duration(p.nextReviewAt-Date.now())}` : ""}</span><span class="grammar-map-progress" role="progressbar" aria-label="Закрепление темы" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${solved}"><i style="width:${solved/total*100}%"></i></span><small>Закрепление ${solved}/${total} · ${lesson.examples.length} примеров</small>`;
+        button.insertAdjacentHTML("afterbegin",`<span class="grammar-map-route">Урок ${lesson.routeNumber}</span>`);
         button.addEventListener("click",()=>{selectedId=lesson.id;setScreen("library")});lane.appendChild(button);
       });
       ui.mapLanes.appendChild(lane);
@@ -218,6 +265,12 @@
     if(!lesson){ui.detail.innerHTML = '<p class="grammar-note">Уроки не загрузились. Обновите страницу.</p>';return}
     const p = progress[lesson.id],started=!!p?.startedAt,due = started && getDueLessonIds(progress).includes(lesson.id);
     ui.detail.innerHTML = `<div class="grammar-detail-header"><div><h3>${escape(lesson.title)}</h3><p class="grammar-meaning">${escape(lesson.meaning)}</p></div><span class="grammar-level">${escape(lesson.level)}</span></div><p class="grammar-explanation">${escape(lesson.explanation)}</p><div class="grammar-form">${escape(lesson.form)}</div><div class="grammar-lesson-actions"><button class="grammar-secondary" id="grammarPracticeLesson" type="button">Закрепить · ${getExercises(lesson).length} заданий</button><button class="btn" id="grammarLearnLesson" type="button" ${started && !due ? "disabled" : ""}>${!started ? "Добавить к повторениям" : due ? "Повторить тему" : "Повтор пока не нужен"}</button></div><p class="grammar-note grammar-practice-note">Закрепление: выбор значения, выбор формы и ввод пропуска. Можно заниматься в любое время — расписание повторений не меняется.</p><h4 class="grammar-examples-title">Примеры в разных ситуациях · ${lesson.examples.length}</h4><div class="grammar-examples">${lesson.examples.map((example,index)=>`<div class="grammar-example"><div><strong lang="ja">${escape(example.jp)}</strong><small>${escape(example.ru)}</small></div><button class="grammar-speak" type="button" data-example="${index}" aria-label="Произнести пример ${index+1}">♪</button></div>`).join("")}</div><p class="grammar-schedule">${!started ? "Тема ещё не в расписании. Изучите примеры и добавьте её к повторениям, когда будете готовы." : `Ответов в повторениях: ${p.seen} · Без подсказок: ${p.correct} · Ошибок: ${p.lapses}<br>${due ? "Пора повторить" : `Следующий повтор через ${duration(p.nextReviewAt-Date.now())}`}`}<br>Закреплено заданий: ${p?.drillSolved?.length || 0}/${getExercises(lesson).length}. <a class="grammar-source" href="${escape(lesson.sourceUrl)}" target="_blank" rel="noopener noreferrer">Подробнее на Bunpro ↗</a></p>`;
+    const plan=getPracticePlan(lesson.id),earlierRules=[...new Set((lesson.combinationQuestions || []).flatMap(q=>q.slots.map(slot=>slot.lessonId)))].filter(id=>id!==lesson.id);
+    ui.detail.querySelector(".grammar-level").textContent=`Урок ${lesson.routeNumber} · N5`;
+    ui.detail.querySelector("#grammarPracticeLesson").textContent=`Заниматься · ${plan.queue.length} заданий`;
+    ui.detail.querySelector("#grammarPracticeLesson").className="btn";
+    ui.detail.querySelector("#grammarLearnLesson").className="grammar-secondary";
+    ui.detail.querySelector(".grammar-lesson-actions").insertAdjacentHTML("beforebegin",`<section class="grammar-cumulative" aria-label="Накопительный урок"><h4>Новое правило + знакомые конструкции</h4><p>${plan.newCount} заданий по теме${plan.combinationCount ? ` · ${plan.combinationCount} на сочетание правил` : ""}${plan.recallCount ? ` · ${plan.recallCount} на ранее изученное` : ""}.</p>${earlierRules.length ? `<p>Соединяем с: ${earlierRules.map(id=>`<a href="#grammar/lesson/${id}" lang="ja">${escape(lessons.find(t=>t.id===id).title)}</a>`).join(" · ")}.</p>` : "<p>Первый шаг: учимся завершать вежливое утверждение. В следующем уроке добавим частицу темы は.</p>"}${plan.previousLessonIds.length ? `<p>Вспомним: ${plan.previousLessonIds.map(id=>escape(lessons.find(t=>t.id===id).title)).join(" · ")}. Сложные темы получают приоритет.</p>` : ""}</section>`);
     ui.detail.querySelectorAll("[data-example]").forEach(button=>button.addEventListener("click",()=>host?.speak(lesson.examples[Number(button.dataset.example)].jp,true)));
     ui.detail.querySelector("#grammarLearnLesson").addEventListener("click",()=>{
       if(!started && !save({...progress,[lesson.id]:{...p,...emptyProgress()}})) return;
@@ -237,10 +290,8 @@
   }
   function startPractice(lessonId){
     selectedId=lessonId;
-    const lesson=lessons.find(item=>item.id===lessonId),exercises=getExercises(lesson);
-    const order=[0,1,7,2,3,8,4,5,6];
-    const queue=order.map(index=>({lessonId,type:exercises[index].type,index:exercises[index].index}));
-    beginSession(queue,"practice");
+    const plan=getPracticePlan(lessonId);
+    beginSession(plan.queue,"practice");session.plan=plan;
   }
   function beginSession(queue,kind){
     stopAudio();clearTimeout(wakeTimer);currentScreen="practice";
@@ -253,21 +304,29 @@
     if(!session.current){renderFinish();return}
     const lesson = lessons.find(item=>item.id === session.current.lessonId);
     const question=getExercises(lesson).find(item=>item.type===session.current.type && item.index===session.current.index);
-    const meaning=question.type==="meaning",fill=question.type==="fill";
+    ui.practice.dataset.topic=lesson.id;ui.practice.dataset.exerciseType=question.type;ui.practice.dataset.exerciseIndex=String(question.index);ui.practice.dataset.exerciseRole=session.current.role || "review";
+    const meaning=question.type==="meaning",combine=question.type==="combine",fill=question.type==="fill" || combine;
     const options=(question.options || []).map((text,index)=>({text,index}));
     for(let index=options.length-1;index>0;index--){const other=Math.floor(Math.random()*(index+1));[options[index],options[other]]=[options[other],options[index]]}
-    const prompt=meaning ? question.prompt : INSTRUCTIONS[lesson.id] || "Заполните пропуск по переводу.";
-    const answerZone=fill ? '<form class="grammar-answer-form"><input id="grammarAnswer" type="text" placeholder="Ответ…" aria-label="Ответ на задание по грамматике" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" type="submit">Проверить</button></form><p class="grammar-input-note">Можно вводить японскую запись или ромадзи. Для частицы темы допустимы ha и wa; для частицы объекта — wo и o.</p>'
+    const prompt=meaning ? question.prompt : combine ? "Соберите предложение: заполните все пропуски по переводу. Новое правило используется вместе с предыдущими." : INSTRUCTIONS[lesson.id] || "Заполните пропуск по переводу.";
+    const controls=combine ? question.slots.map((slot,i)=>`<label class="grammar-slot-input">Пропуск ${i+1}<input ${i===0 ? 'id="grammarAnswer"' : ''} data-slot="${i}" type="text" placeholder="Ответ…" aria-label="Ответ для пропуска ${i+1}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`).join("") : '<input id="grammarAnswer" type="text" placeholder="Ответ…" aria-label="Ответ на задание по грамматике" autocomplete="off" autocapitalize="off" spellcheck="false">';
+    const answerZone=fill ? `<form class="grammar-answer-form ${combine ? "grammar-combination-form" : ""}">${controls}<button class="btn" type="submit">Проверить</button></form><p class="grammar-input-note">Можно вводить японскую запись или ромадзи. Для частицы темы допустимы ha и wa; для частицы объекта — wo и o.</p>`
       : `<div class="grammar-choice-list" role="group" aria-label="Варианты ответа">${options.map(option=>`<button type="button" class="grammar-choice" data-option-index="${option.index}">${escape(option.text)}</button>`).join("")}</div>`;
-    ui.practice.innerHTML = `<div class="grammar-practice-head"><div><p class="grammar-eyebrow">${meaning ? "Значение правила" : fill ? "Введите пропуск" : "Выберите форму"}</p><h3>${session.kind==="practice" ? "Закрепление" : "Проверка памяти"} · N5</h3></div><span class="grammar-counter">Осталось ${session.queue.length+1}</span></div><p class="grammar-note">${escape(prompt)}</p><p class="grammar-sentence" lang="ja">${meaning ? escape(lesson.title) : `${escape(question.before)}<span class="grammar-blank">…</span>${escape(question.after)}`}</p>${meaning ? "" : `<p class="grammar-translation">${escape(question.translation)}</p>`}${answerZone}<details class="grammar-hint"><summary>Подсказка и правило</summary><p>${escape(question.hint || lesson.meaning)}</p><p><strong>${escape(lesson.title)}</strong> · ${escape(lesson.explanation)}</p></details><div class="grammar-feedback" hidden role="status" aria-live="polite"></div><div class="grammar-next-row"><button class="grammar-secondary" type="button" id="grammarBackToLessons">К урокам</button><span class="grammar-note">${session.kind==="practice" ? "Свободная практика не меняет расписание." : "После ошибки тема вернётся в этой сессии."}</span></div>`;
+    const sentence=meaning ? escape(lesson.title) : combine ? question.slots.map((slot,i)=>escape(question.fragments[i])+(i===question.slots.length-1 ? `<span class="grammar-sentence-ending"><span class="grammar-blank" data-slot="${i}">${i+1}</span>${escape(question.fragments.at(-1))}</span>` : `<span class="grammar-blank" data-slot="${i}">${i+1}</span>`)).join("") : `${escape(question.before)}<span class="grammar-blank">…</span>${escape(question.after)}`;
+    const role=session.current.role==="recall" ? "Вспоминаем предыдущий урок" : combine ? "Соединяем изученные правила" : "Тема урока";
+    const roleTitle=combine ? [...new Set(question.slots.map(slot=>slot.lessonId))].map(id=>lessons.find(t=>t.id===id).title).join(" + ") : lesson.title;
+    ui.practice.innerHTML = `<div class="grammar-practice-head"><div><p class="grammar-eyebrow">${meaning ? "Значение правила" : combine ? "Соберите предложение" : fill ? "Введите пропуск" : "Выберите форму"}</p><h3>${session.kind==="practice" ? "Закрепление" : "Проверка памяти"} · N5</h3></div><span class="grammar-counter">Осталось ${session.queue.length+1}</span></div>${session.kind==="practice" ? `<p class="grammar-recall-label ${session.current.role==="recall" ? "is-recall" : ""}">${role} · <span lang="ja">${escape(lesson.title)}</span></p>` : ""}<p class="grammar-note">${escape(prompt)}</p><p class="grammar-sentence" lang="ja">${sentence}</p>${meaning ? "" : `<p class="grammar-translation">${escape(question.translation)}</p>`}${answerZone}<details class="grammar-hint"><summary>Подсказка и правило</summary><p>${escape(question.hint || lesson.meaning)}</p><p><strong>${escape(lesson.title)}</strong> · ${escape(lesson.explanation)}</p></details><div class="grammar-feedback" hidden role="status" aria-live="polite"></div><div class="grammar-next-row"><button class="grammar-secondary" type="button" id="grammarBackToLessons">К урокам</button><span class="grammar-note">${session.kind==="practice" ? "Свободная практика не меняет расписание." : "После ошибки тема вернётся в этой сессии."}</span></div>`;
     const input = ui.practice.querySelector("input");
+    const roleLabel=ui.practice.querySelector(".grammar-recall-label span");if(roleLabel)roleLabel.textContent=roleTitle;
+    if(combine)ui.practice.querySelector("form").style.setProperty("--grammar-slots",question.slots.length);
     if(input){
     if(active) input.focus({preventScroll:true});
-    input.addEventListener("compositionstart",()=>{if(session) session.composing = true});
-    input.addEventListener("compositionend",()=>{if(session) session.composing = false});
-    input.addEventListener("keydown",event=>{
+    ui.practice.querySelectorAll("input").forEach(field=>{
+    field.addEventListener("compositionstart",()=>{if(session) session.composing = true});
+    field.addEventListener("compositionend",()=>{if(session) session.composing = false});
+    field.addEventListener("keydown",event=>{
       if(event.key === "Enter" && (event.isComposing || event.keyCode === 229)) event.preventDefault();
-    });
+    });});
     ui.practice.querySelector("form").addEventListener("submit",event=>{event.preventDefault();checkAnswer(lesson,question,input)});
     }else{
       ui.practice.querySelectorAll(".grammar-choice").forEach(button=>button.addEventListener("click",()=>checkAnswer(lesson,question,null,Number(button.dataset.optionIndex))));
@@ -278,39 +337,40 @@
   }
   function checkAnswer(lesson,question,input,choiceIndex = null){
     if(!session || session.locked || session.composing) return;
-    if(input && !input.value.trim()){input.focus();return}
-    const ok = input ? isAnswerCorrect(input.value,question.answers) : choiceIndex===question.correctIndex;
+    const combine=question.type==="combine",inputs=[...ui.practice.querySelectorAll(".grammar-answer-form input")];
+    const empty=inputs.find(field=>!field.value.trim());if(empty){empty.focus();return}
+    const slotResults=combine ? question.slots.map((slot,i)=>isAnswerCorrect(inputs[i].value,slot.answers)) : [];
+    const ok = combine ? slotResults.every(Boolean) : input ? isAnswerCorrect(input.value,question.answers) : choiceIndex===question.correctIndex;
     const usedHint = session.hintUsed || ui.practice.querySelector("details").open;
-    let next;
+    let next,updated;
     if(session.kind==="practice"){
-      const previous=progress[lesson.id] || emptyProgress(0),solved=new Set(previous.drillSolved || []);
-      if(ok && !usedHint) solved.add(question.key);
-      next={...previous,practiceSeen:(previous.practiceSeen || 0)+1,practiceCorrect:(previous.practiceCorrect || 0)+Number(ok && !usedHint),lastPracticeAt:Date.now(),drillSolved:[...solved]};
-    }else next = getNextProgress(progress[lesson.id],ok,Date.now(),usedHint);
-    if(!save({...progress,[lesson.id]:next})) return;
+      updated=recordPracticeAnswer(progress,lesson.id,question,ok,Date.now(),usedHint,slotResults);next=updated[lesson.id];
+    }else{next = getNextProgress(progress[lesson.id],ok,Date.now(),usedHint);updated={...progress,[lesson.id]:next}}
+    if(!save(updated)) return;
     session.locked = true;session.completed++;
     if(ok){if(!usedHint) session.correct++}else session.queue.splice(Math.min(2,session.queue.length),0,session.current);
-    if(input){input.disabled = true;ui.practice.querySelector("button[type=submit]").disabled = true}
+    if(input){inputs.forEach(field=>field.disabled=true);ui.practice.querySelector("button[type=submit]").disabled = true}
     ui.practice.querySelectorAll(".grammar-choice").forEach(button=>{
       button.disabled=true;button.classList.toggle("is-correct",Number(button.dataset.optionIndex)===question.correctIndex);
       button.classList.toggle("is-wrong",!ok && Number(button.dataset.optionIndex)===choiceIndex);
     });
-    const answer=question.options ? question.options[question.correctIndex] : question.answers[0];
-    const blank = ui.practice.querySelector(".grammar-blank");if(blank){blank.textContent = answer;blank.classList.toggle("is-correct",ok)}
+    const answer=combine ? question.slots.map(slot=>slot.answers[0]).join(" · ") : question.options ? question.options[question.correctIndex] : question.answers[0];
+    ui.practice.querySelectorAll(".grammar-blank").forEach((blank,i)=>{blank.textContent=combine ? question.slots[i].answers[0] : answer;blank.classList.toggle("is-correct",combine ? slotResults[i] : ok)});
     const feedback = ui.practice.querySelector(".grammar-feedback");feedback.hidden = false;feedback.classList.toggle("is-wrong",!ok);
     const schedule=session.kind==="practice" ? "Свободное закрепление: расписание повторений не изменилось." : `Следующее повторение через ${duration(next.intervalMs)}.`;
     feedback.innerHTML = `<strong>${ok ? usedHint ? "Верно с подсказкой — попробуйте позже самостоятельно" : "Верно!" : `Правильный ответ: ${escape(answer)}`}</strong><p>${escape(question.explanation)}</p><p>${ok ? schedule : "Задание вернётся после других; если других нет — сразу следующим вопросом."}</p><button class="btn" id="grammarNextQuestion" type="button">Дальше →</button>`;
     feedback.querySelector("button").addEventListener("click",nextQuestion);feedback.querySelector("button").focus({preventScroll:true});
     renderMetrics();const token = ++audioToken;
-    const speech=question.type==="meaning" ? lesson.examples[0].jp : question.before+answer+question.after;
+    const speech=question.type==="meaning" ? lesson.examples[0].jp : combine ? question.fragments.map((part,i)=>part+(question.slots[i]?.answers[0] || "")).join("") : question.before+answer+question.after;
     if(host?.soundEnabled()) Promise.resolve(host.tone(ok)).then(()=>{if(active && token === audioToken) return host.speak(speech,false)}).catch(()=>{});
   }
   function renderFinish(){
     clearTimeout(wakeTimer);renderMetrics();
     if(session?.kind==="practice"){
-      const lesson=lessons.find(item=>item.id===selectedId),solved=progress[selectedId]?.drillSolved?.length || 0;
-      ui.practice.innerHTML=`<div class="grammar-empty"><div class="grammar-hero-mark" aria-hidden="true">学</div><h3>Закрепление завершено</h3><p>${session.completed} ответов · ${session.correct} верно без подсказок.<br>По теме «${escape(lesson.title)}» закреплено ${solved}/${getExercises(lesson).length} заданий. Расписание повторений не изменилось.</p><button class="btn" type="button">К теме</button></div>`;
-      ui.practice.querySelector("button").addEventListener("click",showLibrary);return;
+      const lesson=lessons.find(item=>item.id===selectedId),solved=progress[selectedId]?.drillSolved?.length || 0,nextLesson=lessons[lessons.indexOf(lesson)+1];
+      ui.practice.innerHTML=`<div class="grammar-empty"><div class="grammar-hero-mark" aria-hidden="true">学</div><h3>Закрепление завершено</h3><p>${session.completed} ответов · ${session.correct} верно без подсказок.<br>По теме «${escape(lesson.title)}» закреплено ${solved}/${getExercises(lesson).length} заданий.${session.plan?.recallCount ? `<br>Также повторили: ${session.plan.previousLessonIds.map(id=>escape(lessons.find(t=>t.id===id).title)).join(" · ")}.` : ""}<br>Расписание повторений не изменилось.</p><div class="grammar-finish-actions"><button class="grammar-secondary" id="grammarFinishBack" type="button">К теме</button>${nextLesson ? `<button class="btn" id="grammarNextLesson" type="button">Урок ${nextLesson.routeNumber} · ${escape(nextLesson.title)} →</button>` : ""}</div></div>`;
+      ui.practice.querySelector("#grammarFinishBack").addEventListener("click",showLibrary);
+      ui.practice.querySelector("#grammarNextLesson")?.addEventListener("click",()=>{selectedId=nextLesson.id;setScreen("library")});return;
     }
     const due = getDueLessonIds(progress),future = Object.values(progress).filter(p=>p.nextReviewAt>Date.now()).map(p=>p.nextReviewAt);
     const next = future.length ? Math.min(...future) : null;
@@ -364,5 +424,5 @@
     if(window.location.hash.startsWith("#grammar")) route();
   }
   window.KanaGrammar = {storageKey:STORAGE_KEY,init,onViewChange,getProgress:()=>JSON.parse(JSON.stringify(progress)),validateProgress,setProgress,reset,
-    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises}};
+    testing:{normalizeAnswer,isAnswerCorrect,getNextProgress,getDueLessonIds,getExercises,getPracticePlan,getPracticeProgress,recordPracticeAnswer}};
 })();
