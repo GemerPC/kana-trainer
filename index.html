@@ -2994,6 +2994,8 @@ function setTransferStatus(message,isError = false){
   el.transferStatus.classList.toggle("is-error",isError);
   const grammarMessage = document.getElementById("grammarMessage");
   if(grammarMessage){grammarMessage.textContent = message;grammarMessage.classList.toggle("is-error",isError)}
+  const courseMessage = document.getElementById("courseMessage");
+  if(courseMessage){courseMessage.textContent = message;courseMessage.classList.toggle("is-error",isError)}
 }
 
 function exportProgress(){
