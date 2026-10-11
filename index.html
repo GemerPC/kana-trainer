@@ -18,6 +18,7 @@
 </script>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="grammar.css?v=20261011-3">
+<link rel="stylesheet" href="video-course.css?v=20261011-1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -872,6 +873,7 @@
   <nav class="app-tabs" role="tablist" aria-label="Разделы приложения">
     <button class="app-tab" id="trainerTab" type="button" role="tab" aria-selected="true" aria-controls="trainerView" data-view="trainer">Тренировка</button>
     <button class="app-tab" id="grammarTab" type="button" role="tab" aria-selected="false" aria-controls="grammarView" data-view="grammar" tabindex="-1">Грамматика</button>
+    <button class="app-tab" id="courseTab" type="button" role="tab" aria-selected="false" aria-controls="courseView" data-view="course" tabindex="-1">Видеокурс N5</button>
     <button class="app-tab" id="statisticsTab" type="button" role="tab" aria-selected="false" aria-controls="statisticsView" data-view="statistics" tabindex="-1">Статистика</button>
   </nav>
 
@@ -1000,6 +1002,18 @@
     <p class="grammar-note">Повторения: от 10 минут до нескольких дней и месяцев. После ошибки тема возвращается в той же сессии. Подсказка не засчитывается как самостоятельное воспоминание. Связи с аккаунтом или платной подпиской Bunpro нет.</p>
   </section>
 
+  <section class="app-view course-view" id="courseView" role="tabpanel" aria-labelledby="courseTab" hidden>
+    <header class="grammar-hero"><div><p class="grammar-eyebrow">Отдельный курс · EasyTravel</p><h2>Японский с нуля до N5</h2><p>Видео из вашей папки, краткие объяснения и самостоятельные задания. Двигайтесь по урокам: новые конструкции + возвращение к знакомым.</p></div><span class="grammar-hero-mark" aria-hidden="true">学</span></header>
+    <div class="course-toolbar"><button class="grammar-secondary" id="courseMapButton" type="button">Карта курса</button><button class="grammar-secondary" id="courseConnect" type="button">Подключить папку Video</button><button class="btn" id="courseReview" type="button">Повторить</button><input id="courseFolder" type="file" accept="video/mp4" webkitdirectory multiple hidden></div>
+    <p class="grammar-note">Файлы видео остаются на вашем устройстве. Выберите папку Video, чтобы смотреть их прямо здесь; после перезагрузки подключите её снова. Урока 22 в исходной папке нет. Кандзи — дополнительный урок.</p>
+    <div class="grammar-metrics" id="courseMetrics"></div>
+    <div id="courseMap" class="course-map" aria-label="Карта видеокурса"></div>
+    <section id="courseLesson" class="course-lesson" aria-label="Урок видеокурса" hidden></section>
+    <section id="coursePractice" class="grammar-practice" aria-label="Практика видеокурса" hidden></section>
+    <div class="grammar-transfer"><button class="link" id="courseExport" type="button">Сохранить весь прогресс</button><button class="link" id="courseImport" type="button">Загрузить прогресс</button><button class="link" id="courseReset" type="button">Сбросить только видеокурс</button></div>
+    <p class="grammar-message" id="courseMessage" role="status" aria-live="polite"></p>
+    <p class="grammar-note">Видео — материалы EasyTravel. Объяснения и упражнения тренажёра созданы отдельно; это не официальный пакет заданий автора и не сертификат курса. Прогресс этого курса независим от каны и раздела «Грамматика».</p>
+  </section>
   <section class="app-view statistics-view" id="statisticsView" role="tabpanel" aria-labelledby="statisticsTab" hidden>
     <section class="anki-dashboard" aria-labelledby="activityTitle">
       <h2 class="visually-hidden" id="activityTitle">Годовая статистика занятий</h2>
@@ -1207,6 +1221,7 @@ const ALL_CARDS_SOURCE = [
 const STORAGE_KEY = "kanaTrainerProgressV1";
 const SETTINGS_KEY = "kanaTrainerSettingsV1";
 const GRAMMAR_STORAGE_KEY = "kanaTrainerGrammarV1";
+const COURSE_STORAGE_KEY = "kanaTrainerVideoCourseV1";
 const HISTORY_KEY = "kanaTrainerHistoryV1";
 
 function loadProgress(){
@@ -1694,9 +1709,11 @@ const el = {
   closeHelp: document.getElementById("closeHelp"),
   trainerTab: document.getElementById("trainerTab"),
   grammarTab: document.getElementById("grammarTab"),
+  courseTab: document.getElementById("courseTab"),
   statisticsTab: document.getElementById("statisticsTab"),
   trainerView: document.getElementById("trainerView"),
   grammarView: document.getElementById("grammarView"),
+  courseView: document.getElementById("courseView"),
   statisticsView: document.getElementById("statisticsView"),
   todayStudySummary: document.getElementById("todayStudySummary"),
   activityCalendar: document.getElementById("activityCalendar"),
@@ -2384,17 +2401,19 @@ function renderStatisticsDashboard(){
 
 function switchAppView(viewName){
   if(viewSwitching) return;
-  const views = {trainer:el.trainerView,grammar:el.grammarView,statistics:el.statisticsView};
+  const views = {trainer:el.trainerView,grammar:el.grammarView,course:el.courseView,statistics:el.statisticsView};
   if(!views[viewName] || activeView === viewName) return;
   const currentView = views[activeView],nextView = views[viewName];
   const keepTabFocus = document.activeElement?.getAttribute("role") === "tab";
   clearTimeout(reviewWakeTimer);cancelActiveFeedback();
   window.KanaGrammar?.onViewChange(false);
+  window.KanaVideoCourse?.onViewChange(false);
   activeView = viewName;
   if(viewName !== "grammar" && window.location.hash.startsWith("#grammar")) window.history.replaceState(null,"",`#${viewName}`);
+  if(viewName !== "course" && window.location.hash.startsWith("#course")) window.history.replaceState(null,"",`#${viewName}`);
 
   viewSwitching = true;
-  [el.trainerTab,el.grammarTab,el.statisticsTab].forEach(tab => {
+  [el.trainerTab,el.grammarTab,el.courseTab,el.statisticsTab].forEach(tab => {
     const selected = tab.dataset.view === viewName;
     tab.setAttribute("aria-selected",String(selected));tab.tabIndex = selected ? 0 : -1;
   });
@@ -2410,6 +2429,7 @@ function switchAppView(viewName){
     nextView.classList.add("is-entering");
     if(viewName === "statistics") renderStatisticsDashboard();
     if(viewName === "grammar") window.KanaGrammar?.onViewChange(true);
+    if(viewName === "course") window.KanaVideoCourse?.onViewChange(true);
     if(viewName === "trainer") startQuestion();
     if(keepTabFocus) document.querySelector(`[role="tab"][data-view="${viewName}"]`).focus({preventScroll:true});
     setTimeout(() => {
@@ -2941,7 +2961,7 @@ document.querySelectorAll("[data-stat-filter]").forEach(stat => {
   stat.addEventListener("blur", () => setHeatmapFilter(null));
 });
 
-const appTabs = [el.trainerTab,el.grammarTab,el.statisticsTab];
+const appTabs = [el.trainerTab,el.grammarTab,el.courseTab,el.statisticsTab];
 appTabs.forEach((tab,index) => {
   tab.addEventListener("click", () => switchAppView(tab.dataset.view));
   tab.addEventListener("keydown", event => {
@@ -2980,7 +3000,7 @@ function exportProgress(){
   persistSettings();
   const backup = {
     app:"kana-trainer",version:1,exportedAt:new Date().toISOString(),
-    progress,history:studyHistory,settings:loadSettings(),grammarProgress:window.KanaGrammar?.getProgress() || {}
+    progress,history:studyHistory,settings:loadSettings(),grammarProgress:window.KanaGrammar?.getProgress() || {},courseProgress:window.KanaVideoCourse?.getProgress() || {}
   };
   const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -2988,7 +3008,7 @@ function exportProgress(){
   link.href = url;link.download = `kana-progress-${localDateKey()}.json`;
   document.body.appendChild(link);link.click();link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url),1000);
-  setTransferStatus("Резервная копия сохранена: кана, грамматика, расписание повторений и история занятий.");
+  setTransferStatus("Резервная копия сохранена: кана, грамматика, видеокурс, повторения и история. Сами видео в неё не входят.");
 }
 
 function validateProgressBackup(data){
@@ -3068,7 +3088,12 @@ function validateProgressBackup(data){
     if(!window.KanaGrammar) throw new Error("Модуль грамматики не загрузился. Обновите страницу перед импортом.");
     cleanGrammar = window.KanaGrammar.validateProgress(data.grammarProgress);
   }
-  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings,grammarProgress:cleanGrammar};
+  let cleanCourse=null;
+  if(wrapped && data.courseProgress != null){
+    if(!window.KanaVideoCourse) throw new Error("Видеокурс не загрузился. Обновите страницу перед импортом.");
+    cleanCourse=window.KanaVideoCourse.validateProgress(data.courseProgress);
+  }
+  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings,grammarProgress:cleanGrammar,courseProgress:cleanCourse};
 }
 
 function resetSessionState(){
@@ -3087,17 +3112,20 @@ async function importProgress(file){
     const learned = Object.values(imported.progress).filter(p => p.seenTotal > 0).length;
     const totalAnswers = Object.values(imported.progress).reduce((sum,p) => sum + p.seenTotal,0);
     const grammarInfo = imported.grammarProgress === null ? "Грамматика не изменится (в этой копии её нет)." : `Тем грамматики: ${Object.keys(imported.grammarProgress).length}; её текущий прогресс тоже будет заменён.`;
-    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс каны и история будут заменены. ${grammarInfo} Для резервной копии используйте «Сохранить прогресс».`)){
+    const courseInfo=imported.courseProgress === null ? "Видеокурс не изменится (в этой копии его нет)." : "Прогресс видеокурса тоже будет заменён.";
+    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс каны и история будут заменены. ${grammarInfo} ${courseInfo} Для резервной копии используйте «Сохранить прогресс».`)){
       setTransferStatus("Загрузка отменена.");return;
     }
     const keys = [STORAGE_KEY,HISTORY_KEY,SETTINGS_KEY];
     if(imported.grammarProgress !== null) keys.push(GRAMMAR_STORAGE_KEY);
+    if(imported.courseProgress !== null) keys.push(COURSE_STORAGE_KEY);
     const previous = keys.map(key => localStorage.getItem(key));
     try{
       localStorage.setItem(STORAGE_KEY,JSON.stringify(imported.progress));
       localStorage.setItem(HISTORY_KEY,JSON.stringify(imported.history));
       if(imported.settings) localStorage.setItem(SETTINGS_KEY,JSON.stringify(imported.settings));
       if(imported.grammarProgress !== null) localStorage.setItem(GRAMMAR_STORAGE_KEY,JSON.stringify(imported.grammarProgress));
+      if(imported.courseProgress !== null) localStorage.setItem(COURSE_STORAGE_KEY,JSON.stringify(imported.courseProgress));
     }catch(error){
       keys.forEach((key,index) => {
         try{if(previous[index] === null) localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}
@@ -3106,6 +3134,7 @@ async function importProgress(file){
     }
     progress = imported.progress;studyHistory = imported.history;
     if(imported.grammarProgress !== null) window.KanaGrammar.setProgress(imported.grammarProgress,{persist:false});
+    if(imported.courseProgress !== null) window.KanaVideoCourse.setProgress(imported.courseProgress,{persist:false});
     resetSessionState();
     if(imported.settings){
       el.swDakuten.classList.toggle("on",imported.settings.includeDakuten);
@@ -3134,13 +3163,17 @@ el.btnMotion.addEventListener("click",() => {
 ====================================================================== */
 
 el.btnReset.addEventListener("click", () => {
-  const ok = window.confirm("Сбросить весь прогресс каны и грамматики, расписание повторений и историю статистики? Это нельзя отменить.");
+  const ok = window.confirm("Сбросить весь прогресс каны, грамматики и видеокурса, расписание повторений и историю статистики? Это нельзя отменить.");
   if(!ok) return;
-  if(window.KanaGrammar && !window.KanaGrammar.reset()) return;
+  const keys=[STORAGE_KEY,HISTORY_KEY,GRAMMAR_STORAGE_KEY,COURSE_STORAGE_KEY],previous=keys.map(key=>localStorage.getItem(key));
+  try{keys.forEach(key=>localStorage.setItem(key,"{}"))}catch(error){
+    keys.forEach((key,index)=>{try{if(previous[index]===null)localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}});
+    setTransferStatus("Не удалось сбросить прогресс. Освободите место в браузере и попробуйте снова.",true);return;
+  }
+  window.KanaGrammar?.setProgress({},{persist:false});
+  window.KanaVideoCourse?.setProgress({},{persist:false});
   progress = {};
-  saveProgress(progress);
   studyHistory = {};
-  saveStudyHistory(studyHistory);
   resetSessionState();
   updateStreakBadge();
   renderStatisticsDashboard();
@@ -3196,6 +3229,7 @@ startQuestion();
 
 window.KanaGrammarHost = {
   openGrammar:()=>switchAppView("grammar"),
+  openCourse:()=>switchAppView("course"),
   speak:speakKana,tone:playFeedbackTone,soundEnabled:()=>state.soundEnabled,
   cancelSpeech:()=>{if("speechSynthesis" in window) window.speechSynthesis.cancel()},
   exportProgress,importProgress:()=>el.progressFile.click()
@@ -3206,6 +3240,10 @@ window.KanaGrammarHost = {
 <script src="grammar-data.js?v=20261011-2"></script>
 <script src="grammar.js?v=20261011-3"></script>
 <script>window.KanaGrammar.init(window.KanaGrammarHost);</script>
+<script src="video-course-manifest.js?v=20261011-1"></script>
+<script src="video-course-data.js?v=20261011-1"></script>
+<script src="video-course.js?v=20261011-1"></script>
+<script>window.KanaVideoCourse.init(window.KanaGrammarHost);</script>
 
 </body>
 </html>
