@@ -19,6 +19,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="grammar.css?v=20261011-3">
 <link rel="stylesheet" href="video-course.css?v=20261011-2">
+<link rel="stylesheet" href="vocabulary.css?v=20261026-1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -874,6 +875,7 @@
     <button class="app-tab" id="trainerTab" type="button" role="tab" aria-selected="true" aria-controls="trainerView" data-view="trainer">Тренировка</button>
     <button class="app-tab" id="grammarTab" type="button" role="tab" aria-selected="false" aria-controls="grammarView" data-view="grammar" tabindex="-1">Грамматика</button>
     <button class="app-tab" id="courseTab" type="button" role="tab" aria-selected="false" aria-controls="courseView" data-view="course" tabindex="-1">Видеокурс N5</button>
+    <button class="app-tab" id="vocabularyTab" type="button" role="tab" aria-selected="false" aria-controls="vocabularyView" data-view="vocabulary" tabindex="-1">Слова · 800</button>
     <button class="app-tab" id="statisticsTab" type="button" role="tab" aria-selected="false" aria-controls="statisticsView" data-view="statistics" tabindex="-1">Статистика</button>
   </nav>
 
@@ -1013,6 +1015,23 @@
     <div class="grammar-transfer"><button class="link" id="courseExport" type="button">Сохранить весь прогресс</button><button class="link" id="courseImport" type="button">Загрузить прогресс</button><button class="link" id="courseReset" type="button">Сбросить только видеокурс</button></div>
     <p class="grammar-message" id="courseMessage" role="status" aria-live="polite"></p>
     <p class="grammar-note">Видео — материалы EasyTravel. Объяснения и упражнения тренажёра созданы отдельно; это не официальный пакет заданий автора и не сертификат курса. Прогресс этого курса независим от каны и раздела «Грамматика».</p>
+  </section>
+  <section class="app-view vocabulary-view" id="vocabularyView" role="tabpanel" aria-labelledby="vocabularyTab" hidden>
+    <header class="grammar-hero"><div><p class="grammar-eyebrow">800 слов и выражений · русский перевод</p><h2>Словарь для повседневной жизни</h2><p>База с ориентиром N5 и полезное расширение выше N5. Карточки с чтением, ромадзи и примерами — учите по 10 новых слов и возвращайтесь к повторениям.</p></div><span class="grammar-hero-mark" aria-hidden="true">語</span></header>
+    <div class="grammar-metrics" id="vocabMetrics"></div>
+    <div class="vocab-controls">
+      <label>Поиск по-японски, по-русски или ромадзи<input id="vocabSearch" type="search" placeholder="Например: школа, がっこう, gakkou…" autocomplete="off"></label>
+      <label>Категория<select id="vocabCategory" aria-label="Категория слов"></select></label>
+      <label>Состояние<select id="vocabState"><option value="all">Все карточки</option><option value="new">Новые</option><option value="learning">Изучаются</option><option value="due">К повторению</option><option value="mastered">Закреплены</option></select></label>
+    </div>
+    <div class="vocab-toolbar"><label class="vocab-direction">Направление карточек<select id="vocabDirection"><option value="ja-ru">Японский → русский</option><option value="ru-ja">Русский → японский</option></select></label><button class="grammar-secondary" id="vocabMapButton" type="button">К словарю</button><button class="grammar-secondary" id="vocabLearn" type="button">Учить новые</button><button class="btn" id="vocabReview" type="button">Повторить</button></div>
+    <section id="vocabCatalog" aria-label="Каталог слов"><div class="vocab-grid" id="vocabGrid"></div><div class="vocab-pagination"><button class="grammar-secondary" id="vocabPrev" type="button" aria-label="Предыдущая страница слов">←</button><span id="vocabPageText" aria-live="polite"></span><button class="grammar-secondary" id="vocabNext" type="button" aria-label="Следующая страница слов">→</button></div></section>
+    <section id="vocabPractice" class="grammar-practice" aria-label="Изучение словарных карточек" hidden></section>
+    <div class="vocab-downloads"><a href="data/vocabulary-800.json" download>Словарь JSON</a><a href="data/vocabulary-800.csv" download>Таблица CSV</a><a href="data/vocabulary-800-anki.tsv" download>Карточки TSV для Anki</a><a href="data/vocabulary-audit.json" download>Отчёт проверки</a><a href="https://github.com/GemerPC/kana-trainer/blob/main/VOCABULARY.md" target="_blank" rel="noopener">Форматы и источники</a></div>
+    <div class="grammar-transfer"><button class="link" id="vocabExport" type="button">Сохранить весь прогресс</button><button class="link" id="vocabImport" type="button">Загрузить прогресс</button><button class="link" id="vocabReset" type="button">Сбросить только словарь</button></div>
+    <p class="grammar-message" id="vocabMessage" role="status" aria-live="polite"></p>
+    <p class="vocab-source">300 существительных · 150 глаголов · 100 прилагательных · 50 наречий · 30 местоимений и указательных слов · 70 слов для чисел и времени · 100 выражений. Это учебная подборка, не официальный список JLPT. Написания и чтения сверены с <a href="https://www.edrdg.org/wiki/JMdict-EDICT_Dictionary_Project.html" target="_blank" rel="noopener">JMdict / EDRDG</a> (<a href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener">CC BY-SA 4.0</a>); русские переводы и примеры составлены отдельно. Составные фразы проверены вручную.</p>
+    <dialog class="vocab-dialog" id="vocabDialog" aria-labelledby="vocabDialogTitle"><header><h3 id="vocabDialogTitle" lang="ja"></h3><button class="grammar-secondary" id="vocabDialogClose" type="button" aria-label="Закрыть карточку">✕</button></header><div id="vocabDialogBody"></div></dialog>
   </section>
   <section class="app-view statistics-view" id="statisticsView" role="tabpanel" aria-labelledby="statisticsTab" hidden>
     <section class="anki-dashboard" aria-labelledby="activityTitle">
@@ -1222,6 +1241,7 @@ const STORAGE_KEY = "kanaTrainerProgressV1";
 const SETTINGS_KEY = "kanaTrainerSettingsV1";
 const GRAMMAR_STORAGE_KEY = "kanaTrainerGrammarV1";
 const COURSE_STORAGE_KEY = "kanaTrainerVideoCourseV1";
+const VOCABULARY_STORAGE_KEY = "kanaTrainerVocabularyV1";
 const HISTORY_KEY = "kanaTrainerHistoryV1";
 
 function loadProgress(){
@@ -1710,10 +1730,12 @@ const el = {
   trainerTab: document.getElementById("trainerTab"),
   grammarTab: document.getElementById("grammarTab"),
   courseTab: document.getElementById("courseTab"),
+  vocabularyTab: document.getElementById("vocabularyTab"),
   statisticsTab: document.getElementById("statisticsTab"),
   trainerView: document.getElementById("trainerView"),
   grammarView: document.getElementById("grammarView"),
   courseView: document.getElementById("courseView"),
+  vocabularyView: document.getElementById("vocabularyView"),
   statisticsView: document.getElementById("statisticsView"),
   todayStudySummary: document.getElementById("todayStudySummary"),
   activityCalendar: document.getElementById("activityCalendar"),
@@ -2401,19 +2423,22 @@ function renderStatisticsDashboard(){
 
 function switchAppView(viewName){
   if(viewSwitching) return;
-  const views = {trainer:el.trainerView,grammar:el.grammarView,course:el.courseView,statistics:el.statisticsView};
+  const views = {trainer:el.trainerView,grammar:el.grammarView,course:el.courseView,vocabulary:el.vocabularyView,statistics:el.statisticsView};
   if(!views[viewName] || activeView === viewName) return;
   const currentView = views[activeView],nextView = views[viewName];
   const keepTabFocus = document.activeElement?.getAttribute("role") === "tab";
   clearTimeout(reviewWakeTimer);cancelActiveFeedback();
   window.KanaGrammar?.onViewChange(false);
   window.KanaVideoCourse?.onViewChange(false);
+  window.KanaVocabulary?.onViewChange(false);
   activeView = viewName;
+  if(viewName === "vocabulary" && window.location.hash !== "#vocabulary") window.history.replaceState(null,"","#vocabulary");
   if(viewName !== "grammar" && window.location.hash.startsWith("#grammar")) window.history.replaceState(null,"",`#${viewName}`);
   if(viewName !== "course" && window.location.hash.startsWith("#course")) window.history.replaceState(null,"",`#${viewName}`);
+  if(viewName !== "vocabulary" && window.location.hash === "#vocabulary") window.history.replaceState(null,"",`#${viewName}`);
 
   viewSwitching = true;
-  [el.trainerTab,el.grammarTab,el.courseTab,el.statisticsTab].forEach(tab => {
+  [el.trainerTab,el.grammarTab,el.courseTab,el.vocabularyTab,el.statisticsTab].forEach(tab => {
     const selected = tab.dataset.view === viewName;
     tab.setAttribute("aria-selected",String(selected));tab.tabIndex = selected ? 0 : -1;
   });
@@ -2430,6 +2455,7 @@ function switchAppView(viewName){
     if(viewName === "statistics") renderStatisticsDashboard();
     if(viewName === "grammar") window.KanaGrammar?.onViewChange(true);
     if(viewName === "course") window.KanaVideoCourse?.onViewChange(true);
+    if(viewName === "vocabulary") window.KanaVocabulary?.onViewChange(true);
     if(viewName === "trainer") startQuestion();
     if(keepTabFocus) document.querySelector(`[role="tab"][data-view="${viewName}"]`).focus({preventScroll:true});
     setTimeout(() => {
@@ -2961,7 +2987,7 @@ document.querySelectorAll("[data-stat-filter]").forEach(stat => {
   stat.addEventListener("blur", () => setHeatmapFilter(null));
 });
 
-const appTabs = [el.trainerTab,el.grammarTab,el.courseTab,el.statisticsTab];
+const appTabs = [el.trainerTab,el.grammarTab,el.courseTab,el.vocabularyTab,el.statisticsTab];
 appTabs.forEach((tab,index) => {
   tab.addEventListener("click", () => switchAppView(tab.dataset.view));
   tab.addEventListener("keydown", event => {
@@ -2996,13 +3022,15 @@ function setTransferStatus(message,isError = false){
   if(grammarMessage){grammarMessage.textContent = message;grammarMessage.classList.toggle("is-error",isError)}
   const courseMessage = document.getElementById("courseMessage");
   if(courseMessage){courseMessage.textContent = message;courseMessage.classList.toggle("is-error",isError)}
+  const vocabMessage = document.getElementById("vocabMessage");
+  if(vocabMessage){vocabMessage.textContent = message;vocabMessage.classList.toggle("is-error",isError)}
 }
 
 function exportProgress(){
   persistSettings();
   const backup = {
     app:"kana-trainer",version:1,exportedAt:new Date().toISOString(),
-    progress,history:studyHistory,settings:loadSettings(),grammarProgress:window.KanaGrammar?.getProgress() || {},courseProgress:window.KanaVideoCourse?.getProgress() || {}
+    progress,history:studyHistory,settings:loadSettings(),grammarProgress:window.KanaGrammar?.getProgress() || {},courseProgress:window.KanaVideoCourse?.getProgress() || {},vocabularyProgress:window.KanaVocabulary?.getProgress() || {}
   };
   const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -3010,7 +3038,7 @@ function exportProgress(){
   link.href = url;link.download = `kana-progress-${localDateKey()}.json`;
   document.body.appendChild(link);link.click();link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url),1000);
-  setTransferStatus("Резервная копия сохранена: кана, грамматика, видеокурс, повторения и история. Сами видео в неё не входят.");
+  setTransferStatus("Резервная копия сохранена: кана, грамматика, видеокурс, словарь, повторения и история. Сами видео в неё не входят.");
 }
 
 function validateProgressBackup(data){
@@ -3095,7 +3123,12 @@ function validateProgressBackup(data){
     if(!window.KanaVideoCourse) throw new Error("Видеокурс не загрузился. Обновите страницу перед импортом.");
     cleanCourse=window.KanaVideoCourse.validateProgress(data.courseProgress);
   }
-  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings,grammarProgress:cleanGrammar,courseProgress:cleanCourse};
+  let cleanVocabulary=null;
+  if(wrapped && data.vocabularyProgress != null){
+    if(!window.KanaVocabulary) throw new Error("Словарь не загрузился. Обновите страницу перед импортом.");
+    cleanVocabulary=window.KanaVocabulary.validateProgress(data.vocabularyProgress);
+  }
+  return {progress:cleanProgress,history:cleanHistory,settings:cleanSettings,grammarProgress:cleanGrammar,courseProgress:cleanCourse,vocabularyProgress:cleanVocabulary};
 }
 
 function resetSessionState(){
@@ -3115,12 +3148,14 @@ async function importProgress(file){
     const totalAnswers = Object.values(imported.progress).reduce((sum,p) => sum + p.seenTotal,0);
     const grammarInfo = imported.grammarProgress === null ? "Грамматика не изменится (в этой копии её нет)." : `Тем грамматики: ${Object.keys(imported.grammarProgress).length}; её текущий прогресс тоже будет заменён.`;
     const courseInfo=imported.courseProgress === null ? "Видеокурс не изменится (в этой копии его нет)." : "Прогресс видеокурса тоже будет заменён.";
-    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс каны и история будут заменены. ${grammarInfo} ${courseInfo} Для резервной копии используйте «Сохранить прогресс».`)){
+    const vocabInfo=imported.vocabularyProgress === null ? "Словарь не изменится (в этой копии его нет)." : "Прогресс словаря тоже будет заменён.";
+    if(!window.confirm(`Загрузить прогресс: ${learned} изученных знаков, ${totalAnswers} ответов? Текущий прогресс каны и история будут заменены. ${grammarInfo} ${courseInfo} ${vocabInfo} Для резервной копии используйте «Сохранить прогресс».`)){
       setTransferStatus("Загрузка отменена.");return;
     }
     const keys = [STORAGE_KEY,HISTORY_KEY,SETTINGS_KEY];
     if(imported.grammarProgress !== null) keys.push(GRAMMAR_STORAGE_KEY);
     if(imported.courseProgress !== null) keys.push(COURSE_STORAGE_KEY);
+    if(imported.vocabularyProgress !== null) keys.push(VOCABULARY_STORAGE_KEY);
     const previous = keys.map(key => localStorage.getItem(key));
     try{
       localStorage.setItem(STORAGE_KEY,JSON.stringify(imported.progress));
@@ -3128,6 +3163,7 @@ async function importProgress(file){
       if(imported.settings) localStorage.setItem(SETTINGS_KEY,JSON.stringify(imported.settings));
       if(imported.grammarProgress !== null) localStorage.setItem(GRAMMAR_STORAGE_KEY,JSON.stringify(imported.grammarProgress));
       if(imported.courseProgress !== null) localStorage.setItem(COURSE_STORAGE_KEY,JSON.stringify(imported.courseProgress));
+      if(imported.vocabularyProgress !== null) localStorage.setItem(VOCABULARY_STORAGE_KEY,JSON.stringify(imported.vocabularyProgress));
     }catch(error){
       keys.forEach((key,index) => {
         try{if(previous[index] === null) localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}
@@ -3137,6 +3173,7 @@ async function importProgress(file){
     progress = imported.progress;studyHistory = imported.history;
     if(imported.grammarProgress !== null) window.KanaGrammar.setProgress(imported.grammarProgress,{persist:false});
     if(imported.courseProgress !== null) window.KanaVideoCourse.setProgress(imported.courseProgress,{persist:false});
+    if(imported.vocabularyProgress !== null) window.KanaVocabulary.setProgress(imported.vocabularyProgress,{persist:false});
     resetSessionState();
     if(imported.settings){
       el.swDakuten.classList.toggle("on",imported.settings.includeDakuten);
@@ -3165,15 +3202,16 @@ el.btnMotion.addEventListener("click",() => {
 ====================================================================== */
 
 el.btnReset.addEventListener("click", () => {
-  const ok = window.confirm("Сбросить весь прогресс каны, грамматики и видеокурса, расписание повторений и историю статистики? Это нельзя отменить.");
+  const ok = window.confirm("Сбросить весь прогресс каны, грамматики, видеокурса и словаря, расписание повторений и историю статистики? Это нельзя отменить.");
   if(!ok) return;
-  const keys=[STORAGE_KEY,HISTORY_KEY,GRAMMAR_STORAGE_KEY,COURSE_STORAGE_KEY],previous=keys.map(key=>localStorage.getItem(key));
+  const keys=[STORAGE_KEY,HISTORY_KEY,GRAMMAR_STORAGE_KEY,COURSE_STORAGE_KEY,VOCABULARY_STORAGE_KEY],previous=keys.map(key=>localStorage.getItem(key));
   try{keys.forEach(key=>localStorage.setItem(key,"{}"))}catch(error){
     keys.forEach((key,index)=>{try{if(previous[index]===null)localStorage.removeItem(key);else localStorage.setItem(key,previous[index])}catch(_error){}});
     setTransferStatus("Не удалось сбросить прогресс. Освободите место в браузере и попробуйте снова.",true);return;
   }
   window.KanaGrammar?.setProgress({},{persist:false});
   window.KanaVideoCourse?.setProgress({},{persist:false});
+  window.KanaVocabulary?.setProgress({},{persist:false});
   progress = {};
   studyHistory = {};
   resetSessionState();
@@ -3232,6 +3270,7 @@ startQuestion();
 window.KanaGrammarHost = {
   openGrammar:()=>switchAppView("grammar"),
   openCourse:()=>switchAppView("course"),
+  openVocabulary:()=>switchAppView("vocabulary"),
   speak:speakKana,tone:playFeedbackTone,soundEnabled:()=>state.soundEnabled,
   cancelSpeech:()=>{if("speechSynthesis" in window) window.speechSynthesis.cancel()},
   exportProgress,importProgress:()=>el.progressFile.click()
@@ -3246,6 +3285,9 @@ window.KanaGrammarHost = {
 <script src="video-course-data.js?v=20261011-2"></script>
 <script src="video-course.js?v=20261011-2"></script>
 <script>window.KanaVideoCourse.init(window.KanaGrammarHost);</script>
+<script src="vocabulary-data.js?v=20261026-1"></script>
+<script src="vocabulary.js?v=20261026-1"></script>
+<script>window.KanaVocabulary.init(window.KanaGrammarHost);</script>
 
 </body>
 </html>
