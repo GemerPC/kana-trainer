@@ -7,7 +7,7 @@
   const escape=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const normalize=v=>String(v).normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
   const empty=()=>({seen:0,remembered:0,hard:0,forgot:0,streak:0,stage:0,lastAt:0,dueAt:0});
-  let host,ui,progress={},active=false,category='all',query='',stateFilter='all',page=0,session=null,token=0,wake=0;
+  let host,ui,progress={},active=false,category='all',query='',stateFilter='all',page=0,session=null,token=0,wake=0,speechText=null,speechTask=null;
   function validateProgress(data){
     if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Повреждён прогресс словаря.');
     const clean={},number=(v,max=1e9)=>{if(!Number.isSafeInteger(v)||v<0||v>max)throw Error('Некорректные счётчики словаря.');return v};
@@ -38,7 +38,8 @@
   function due(list=cards,now=Date.now()){return list.filter(c=>progress[c.id]?.seen&&progress[c.id].dueAt<=now).sort((a,b)=>progress[a.id].dueAt-progress[b.id].dueAt)}
   function duration(ms){return ms<60*MIN?`${Math.max(1,Math.ceil(ms/MIN))} мин`:ms<DAY?`${Math.ceil(ms/(60*MIN))} ч`:`${Math.ceil(ms/DAY)} дн`}
   function label(id){return categories.find(c=>c.id===id)?.label||id}
-  function stop(){token++;clearTimeout(wake);host?.cancelSpeech()}
+  function stop(){token++;clearTimeout(wake);speechText=null;speechTask=null;host?.cancelSpeech()}
+  function wordSpeechText(card){const reading=card.reading.normalize('NFKC');return ({'は':'ハ','へ':'ヘ','を':'ヲ'})[reading]||reading}
   function scrollPractice(){if(active)ui.practice.scrollIntoView({block:'start',behavior:document.documentElement.dataset.motion==='off'||window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
   function renderMetrics(){
     const values=Object.values(progress),started=values.filter(p=>p.seen),answers=values.reduce((n,p)=>n+p.seen,0),remembered=values.reduce((n,p)=>n+p.remembered,0);
@@ -59,10 +60,21 @@
   function openDetail(id){
     const c=byId.get(id);if(!c)return;stop();ui.dialogTitle.textContent=c.japanese;
     const p=progress[id];ui.dialogBody.innerHTML=`<p class="grammar-eyebrow">${escape(label(c.category))}</p>${detailContent(c)}<div class="vocab-audio"><button class="grammar-secondary" data-vocab-speak="word" type="button">♪ Слово</button><button class="grammar-secondary" data-vocab-speak="example" type="button">♪ Пример</button></div><p class="grammar-note">${p?.seen?`${p.seen} ответов · вспомнил(а) ${p.remembered} · с трудом ${p.hard} · не вспомнил(а) ${p.forgot}. Следующий повтор: ${p.dueAt<=Date.now()?'уже доступен':duration(p.dueAt-Date.now())}.`:'Эта карточка ещё не изучалась.'}</p><button class="btn" id="vocabStudyOne" type="button">Потренировать карточку</button>`;
-    ui.dialogBody.querySelectorAll('[data-vocab-speak]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.vocabSpeak==='word'?c.japanese:c.example,true)));
+    ui.dialogBody.querySelectorAll('[data-vocab-speak]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.vocabSpeak==='word'?wordSpeechText(c):c.example,true)));
     ui.dialogBody.querySelector('#vocabStudyOne').addEventListener('click',()=>{ui.dialog.close();begin([c.id],'manual')});ui.dialog.showModal();
   }
-  async function speak(text,force=false){stop();try{await host.speak(text,force)}catch(e){message('Не удалось озвучить. Проверьте поддержку японской речи в браузере.',true)}}
+  async function speak(text,force=false){
+    if(speechText===text&&speechTask)return speechTask;
+    const current=++token;clearTimeout(wake);speechText=text;
+    try{
+      const task=Promise.resolve(host.speak(text,force,{requireJapaneseVoice:true}));speechTask=task;
+      const result=await task;if(current!==token)return result;
+      if(result?.status==='no-voice'||result?.status==='unsupported')message('В браузере недоступен японский голос. Проверьте наличие японской озвучки в системе или откройте сайт в другом браузере.',true);
+      else if(result?.status==='error'||result?.status==='timeout')message('Японский голос не смог завершить озвучку. Нажмите «Произнести» ещё раз.',true);
+      return result;
+    }catch(e){if(current===token)message('Не удалось озвучить. Проверьте поддержку японской речи в браузере.',true)}
+    finally{if(current===token){speechText=null;speechTask=null}}
+  }
   function start(kind){
     const list=eligible(true),queue=kind==='new'?list.filter(c=>!progress[c.id]?.seen).slice(0,10):due(list).slice(0,30);
     begin(queue.map(c=>c.id),kind);
@@ -73,7 +85,7 @@
     if(!session.current){finish();return}const c=byId.get(session.current),reverse=session.direction==='ru-ja';ui.practice.dataset.cardId=c.id;
     ui.practice.innerHTML=`<div class="grammar-practice-head"><p class="grammar-eyebrow">Словарные карточки · ${session.kind==='review'?'Повторение':session.kind==='new'?'Новые слова':'Свободная тренировка'}</p><span class="grammar-counter">Осталось ${session.queue.length+1}</span></div><p class="vocab-prompt">${reverse?'Вспомните японское слово или выражение':'Вспомните значение по-русски'}</p><div class="vocab-study-card"><p class="vocab-front ${reverse?'is-russian':''}" ${reverse?'':'lang="ja"'}>${escape(reverse?c.russian:c.japanese)}</p><div class="vocab-back" hidden>${reverse?`<p class="vocab-back-word" lang="ja">${escape(c.japanese)}</p>`:''}${detailContent(c)}</div></div><div class="vocab-audio">${reverse?'':'<button id="vocabFrontSpeak" class="grammar-secondary" type="button">♪ Произнести</button>'}<button class="btn" id="vocabReveal" type="button">Показать ответ</button></div><div class="vocab-grade" hidden aria-label="Как получилось вспомнить"><button type="button" data-vocab-grade="again"><strong>1 · Не помню</strong><span>Повторим ещё раз</span></button><button type="button" data-vocab-grade="hard"><strong>2 · С трудом</strong><span>Через 10 минут</span></button><button type="button" data-vocab-grade="remembered"><strong>3 · Помню</strong><span>Увеличить интервал</span></button></div><p class="vocab-feedback" role="status" aria-live="polite"></p><div class="vocab-bottom"><button class="grammar-secondary" id="vocabExit" type="button">К словарю</button><button class="btn" id="vocabNextCard" type="button" hidden>Дальше →</button></div><p class="grammar-note">Сначала вспомните ответ, затем откройте и честно оцените себя. Пробел — показать ответ; 1/2/3 — оценка.</p>`;
     ui.practice.querySelector('#vocabReveal').addEventListener('click',reveal);
-    ui.practice.querySelector('#vocabFrontSpeak')?.addEventListener('click',()=>speak(c.japanese,true));
+    ui.practice.querySelector('#vocabFrontSpeak')?.addEventListener('click',()=>speak(wordSpeechText(c),true));
     ui.practice.querySelectorAll('[data-vocab-grade]').forEach(b=>b.addEventListener('click',()=>grade(b.dataset.vocabGrade)));
     ui.practice.querySelector('#vocabNextCard').addEventListener('click',nextCard);ui.practice.querySelector('#vocabExit').addEventListener('click',openCatalog);
     if(active)ui.practice.querySelector('#vocabReveal').focus({preventScroll:true});
@@ -83,8 +95,8 @@
     if(!session?.current||session.revealed)return;session.revealed=true;const c=byId.get(session.current);
     ui.practice.querySelector('.vocab-back').hidden=false;ui.practice.querySelector('.vocab-study-card').classList.add('is-revealed');ui.practice.querySelector('.vocab-grade').hidden=false;ui.practice.querySelector('#vocabReveal').hidden=true;
     ui.practice.querySelector('.vocab-audio').insertAdjacentHTML('beforeend','<button class="grammar-secondary" id="vocabBackSpeak" type="button">♪ Слово</button><button class="grammar-secondary" id="vocabExampleSpeak" type="button">♪ Пример</button>');
-    ui.practice.querySelector('#vocabBackSpeak').addEventListener('click',()=>speak(c.japanese,true));ui.practice.querySelector('#vocabExampleSpeak').addEventListener('click',()=>speak(c.example,true));
-    if(active&&host.soundEnabled())speak(c.japanese);
+    ui.practice.querySelector('#vocabBackSpeak').addEventListener('click',()=>speak(wordSpeechText(c),true));ui.practice.querySelector('#vocabExampleSpeak').addEventListener('click',()=>speak(c.example,true));
+    if(active&&host.soundEnabled())speak(wordSpeechText(c));
   }
   function grade(value){
     if(!session?.revealed||session.locked)return;
@@ -93,8 +105,9 @@
     if(value==='again')session.queue.splice(Math.min(2,session.queue.length),0,id);
     ui.practice.querySelectorAll('[data-vocab-grade]').forEach(b=>{b.disabled=true;b.classList.toggle('is-selected',b.dataset.vocabGrade===value)});
     ui.practice.querySelector('.vocab-feedback').textContent=value==='again'?'Карточка вернётся в этой тренировке. Следующий плановый повтор — через минуту.':`Сохранено. Следующий повтор через ${duration(p.dueAt-Date.now())}.`;
-    const next=ui.practice.querySelector('#vocabNextCard');next.hidden=false;next.focus({preventScroll:true});renderMetrics();stop();
-    if(host.soundEnabled())Promise.resolve(host.tone(value!=='again')).catch(()=>{});
+    const next=ui.practice.querySelector('#vocabNextCard');next.hidden=false;next.focus({preventScroll:true});renderMetrics();
+    const audioToken=token;
+    if(host.soundEnabled())Promise.resolve(speechTask).then(()=>{if(active&&audioToken===token&&session?.current===id&&session.locked)return host.tone(value!=='again')}).catch(()=>{});
   }
   function finish(){
     renderMetrics();const list=eligible(true),available=due(list),future=list.map(c=>progress[c.id]?.dueAt).filter(t=>t>Date.now()),next=future.length?Math.min(...future):null;
@@ -123,5 +136,5 @@
     window.addEventListener('storage',e=>{if(e.key===KEY){load();openCatalog();message('Прогресс словаря изменён в другой вкладке. Данные обновлены; начните новую тренировку.')}});
     load();renderMetrics();renderCatalog();if(location.hash==='#vocabulary')host.openVocabulary();
   }
-  window.KanaVocabulary={storageKey:KEY,init,onViewChange,getProgress:()=>JSON.parse(JSON.stringify(progress)),setProgress,validateProgress,reset,testing:{nextProgress,status,due,normalize}};
+  window.KanaVocabulary={storageKey:KEY,init,onViewChange,getProgress:()=>JSON.parse(JSON.stringify(progress)),setProgress,validateProgress,reset,testing:{nextProgress,status,due,normalize,wordSpeechText}};
 })();

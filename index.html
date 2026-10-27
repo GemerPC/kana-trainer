@@ -1408,6 +1408,7 @@ const state = {
 
 let feedbackSequenceId = 0;
 let audioContext = null;
+let speechSequence = 0, speechCancelPending = null, currentSpeech = null;
 let activeStatFilter = null;
 let selectedStatsYear = new Date().getFullYear();
 let viewSwitching = false;
@@ -2465,31 +2466,59 @@ function switchAppView(viewName){
   },leaveDelay);
 }
 
-function speakKana(kana, force){
+function cancelSpeech(){
+  speechSequence++;
+  const settle = speechCancelPending;
+  speechCancelPending = null;
+  if(settle) settle();
+  currentSpeech = null;
+  if("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
+function speakKana(kana, force, options = {}){
   return new Promise(resolve => {
     if((!force && !state.soundEnabled) || !("speechSynthesis" in window) || !kana){
-      resolve();
+      resolve({status:!kana ? "empty" : !("speechSynthesis" in window) ? "unsupported" : "muted"});
       return;
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(kana);
-    utterance.lang = "ja-JP";
-    utterance.rate = .78;
-    utterance.pitch = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const japaneseVoice = voices.find(voice => /^ja[-_]/i.test(voice.lang));
-    if(japaneseVoice) utterance.voice = japaneseVoice;
-
-    let finished = false;
-    const finish = () => {
+    cancelSpeech();
+    const synth=window.speechSynthesis,sequence=speechSequence;
+    let utterance=null,finished=false,startTimer=0,voiceTimer=0,watchdog=0;
+    const selectVoice=()=>synth.getVoices().find(voice=>/^ja(?:[-_]|$)/i.test(voice.lang));
+    const voicesChanged=()=>{if(selectVoice())scheduleStart()};
+    const finish = (status,error) => {
       if(finished) return;
       finished = true;
-      resolve();
+      clearTimeout(startTimer);clearTimeout(voiceTimer);clearTimeout(watchdog);
+      synth.removeEventListener?.("voiceschanged",voicesChanged);
+      if(utterance){utterance.onend=null;utterance.onerror=null}
+      if(currentSpeech===utterance)currentSpeech=null;
+      if(speechCancelPending===settleCancelled)speechCancelPending=null;
+      resolve(error ? {status,error} : {status});
     };
-    utterance.onend = finish;
-    utterance.onerror = finish;
-    window.speechSynthesis.speak(utterance);
-    setTimeout(finish, 1800);
+    const settleCancelled=()=>finish("cancelled");
+    function scheduleStart(){
+      if(finished||startTimer)return;
+      clearTimeout(voiceTimer);synth.removeEventListener?.("voiceschanged",voicesChanged);
+      // Let the preceding cancel leave the platform speech queue before starting again.
+      startTimer=setTimeout(()=>{
+        startTimer=0;
+        if(sequence!==speechSequence){finish("cancelled");return}
+        const voice=selectVoice();
+        if(options.requireJapaneseVoice&&!voice){finish("no-voice");return}
+        utterance=new SpeechSynthesisUtterance(String(kana));currentSpeech=utterance;
+        utterance.lang="ja-JP";utterance.rate=.78;utterance.pitch=1;
+        if(voice)utterance.voice=voice;
+        utterance.onend=()=>finish("completed");
+        utterance.onerror=event=>finish("error",event.error||"synthesis-failed");
+        // onend owns normal completion; a long fallback only releases a broken engine.
+        watchdog=setTimeout(()=>{finish("timeout");synth.cancel()},Math.min(120000,Math.max(15000,String(kana).length*350)));
+        try{if(synth.paused)synth.resume();synth.speak(utterance)}catch(error){finish("error",error.message)}
+      },60);
+    }
+    speechCancelPending=settleCancelled;
+    if(selectVoice())scheduleStart();
+    else{synth.addEventListener?.("voiceschanged",voicesChanged);voiceTimer=setTimeout(scheduleStart,1000)}
   });
 }
 
@@ -2560,7 +2589,7 @@ async function playFeedbackTone(isCorrect){
 
 function cancelActiveFeedback(){
   feedbackSequenceId++;
-  if("speechSynthesis" in window) window.speechSynthesis.cancel();
+  cancelSpeech();
   if(el.cardWrap){
     el.cardWrap.classList.remove("is-resolving","is-roulette");
   }
@@ -2971,7 +3000,7 @@ el.soundToggle.addEventListener("click", () => {
   state.soundEnabled = !state.soundEnabled;
   updateSoundControl();
   persistSettings();
-  if(!state.soundEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  if(!state.soundEnabled) cancelSpeech();
   if(state.soundEnabled && activeView === "trainer" && state.current && !state.awaitingNext) speakKana(state.current.kana, true);
 });
 
@@ -3272,7 +3301,7 @@ window.KanaGrammarHost = {
   openCourse:()=>switchAppView("course"),
   openVocabulary:()=>switchAppView("vocabulary"),
   speak:speakKana,tone:playFeedbackTone,soundEnabled:()=>state.soundEnabled,
-  cancelSpeech:()=>{if("speechSynthesis" in window) window.speechSynthesis.cancel()},
+  cancelSpeech,
   exportProgress,importProgress:()=>el.progressFile.click()
 };
 
@@ -3286,7 +3315,7 @@ window.KanaGrammarHost = {
 <script src="video-course.js?v=20261011-2"></script>
 <script>window.KanaVideoCourse.init(window.KanaGrammarHost);</script>
 <script src="vocabulary-data.js?v=20261026-1"></script>
-<script src="vocabulary.js?v=20261026-1"></script>
+<script src="vocabulary.js?v=20261027-1"></script>
 <script>window.KanaVocabulary.init(window.KanaGrammarHost);</script>
 
 </body>
