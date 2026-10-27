@@ -69,12 +69,14 @@
     try{
       const task=Promise.resolve(host.speak(text,force,{requireJapaneseVoice:true}));speechTask=task;
       const result=await task;if(current!==token)return result;
-      if(result?.status==='no-voice'||result?.status==='unsupported')message('В браузере недоступен японский голос. Проверьте наличие японской озвучки в системе или откройте сайт в другом браузере.',true);
-      else if(result?.status==='error'||result?.status==='timeout')message('Японский голос не смог завершить озвучку. Нажмите «Произнести» ещё раз.',true);
+      if(result?.status==='no-voice'||result?.status==='unsupported')speechError('В браузере недоступен японский голос. Проверьте наличие японской озвучки в системе или откройте сайт в другом браузере.');
+      else if(result?.status==='error'||result?.status==='timeout')speechError('Японский голос не смог завершить озвучку. Нажмите «Произнести» ещё раз.');
+      else if(result?.status==='completed'&&ui.message.dataset.speechError===ui.message.textContent){message('',false);delete ui.message.dataset.speechError}
       return result;
-    }catch(e){if(current===token)message('Не удалось озвучить. Проверьте поддержку японской речи в браузере.',true)}
+    }catch(e){if(current===token)speechError('Не удалось озвучить. Проверьте поддержку японской речи в браузере.')}
     finally{if(current===token){speechText=null;speechTask=null}}
   }
+  function speechError(text){message(text,true);ui.message.dataset.speechError=text}
   function start(kind){
     const list=eligible(true),queue=kind==='new'?list.filter(c=>!progress[c.id]?.seen).slice(0,10):due(list).slice(0,30);
     begin(queue.map(c=>c.id),kind);
